@@ -56,14 +56,7 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
-      - name: Build package
-        run: |
-          julia --project=. -e '
-            using Pkg
-            Pkg.instantiate()
-            Pkg.resolve()
-            Pkg.build()
-          '
+      - uses: julia-actions/julia-buildpkg@v1
 
       - uses: julia-actions/julia-runtest@v1
         with:

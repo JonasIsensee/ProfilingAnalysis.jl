@@ -121,11 +121,12 @@ function collect_allocation_profile(workload_fn::Function;
 end
 
 """
-    format_bytes(bytes::Int) -> String
+    format_bytes(bytes::Integer) -> String
 
 Format byte count in human-readable form.
+Accepts any integer type (Int32, Int64, etc.) for cross-platform compatibility.
 """
-function format_bytes(bytes::Int)
+function format_bytes(bytes::Integer)
     if bytes < 1024
         return "$(bytes)B"
     elseif bytes < 1024^2
@@ -161,7 +162,7 @@ function print_allocation_table(sites::Vector{AllocationSite}; max_width=120)
         println(@sprintf("%-5d %-10d %-12s %-10s %s",
                         idx, site.count,
                         format_bytes(site.total_bytes),
-                        format_bytes(Int(round(site.avg_bytes))),
+                        format_bytes(round(Int64, site.avg_bytes)),
                         location))
     end
 end

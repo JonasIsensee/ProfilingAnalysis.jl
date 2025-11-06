@@ -274,7 +274,7 @@ function analyze_allocation_patterns(sites::Vector{AllocationSite};
     # Check for many small allocations
     avg_bytes = total_bytes / total_count
     if avg_bytes < 1000  # Less than 1KB average
-        push!(recommendations, "📦 Many small allocations detected (avg $(format_bytes(Int(round(avg_bytes)))))")
+        push!(recommendations, "📦 Many small allocations detected (avg $(format_bytes(round(Int64, avg_bytes))))")
         push!(recommendations, "   → Consider object pooling or pre-allocation strategies")
         push!(recommendations, "   → Look for allocations in hot inner loops")
     end

@@ -2,11 +2,9 @@
 
 [![CI](https://github.com/JonasIsensee/ProfilingAnalysis.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JonasIsensee/ProfilingAnalysis.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/JonasIsensee/ProfilingAnalysis.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JonasIsensee/ProfilingAnalysis.jl)
-[![License](https://img.shields.io/github/license/JonasIsensee/ProfilingAnalysis.jl)](LICENSE)
-[![Julia Version](https://img.shields.io/badge/julia-v1.10%2B-blue)](https://julialang.org/)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
-A comprehensive profiling analysis toolkit for Julia with support for runtime profiling, allocation tracking, automatic categorization, and smart recommendations.
+A comprehensive profiling analysis toolkit for Julia designed to make performance optimization accessible to LLM agents. Provides concise, actionable insights without the typical profiling bloat.
 
 ## Features
 
@@ -19,27 +17,59 @@ A comprehensive profiling analysis toolkit for Julia with support for runtime pr
 - **JSON Save/Load** - Persistent profile storage
 - **Type Stability Helpers** - Detect dynamic dispatch issues
 
+### LLM-Friendly Features
+- **Ultra-Concise Output** - Hide noise, show only what matters
+- **Smart Filtering** - Automatically exclude system/stdlib bloat
+- **Quick Summaries** - One-line to 5-line summaries
+- **Contextual Hints** - Always show how to get more detail
+- **Compact Formats** - Space-efficient displays for multiple results
+
 ## Quick Start
+
+### Simplest Workflow (Recommended for LLMs)
 
 ```julia
 using ProfilingAnalysis
 
-# Collect runtime profile
-runtime = collect_profile_data() do
-    # Your workload here
+# 1. Collect profile
+profile = collect_profile_data() do
     my_expensive_function()
 end
 
-# Query top hotspots
-top_20 = query_top_n(runtime, 20, filter_fn=e -> !is_system_code(e))
-print_entry_table(top_20)
+# 2. Get concise analysis (all-in-one)
+analyze_profile_concise(profile)
+```
 
-# Auto-categorize by operation type
-categorized = categorize_entries(runtime.entries)
-print_categorized_summary(categorized, runtime.total_samples)
+This gives you:
+- One-line summary of the profile
+- Top 5 hotspots (compact format)
+- Category breakdown
+- Smart optimization recommendations
+- Hints for drilling deeper
+
+### Manual Step-by-Step
+
+```julia
+# Collect runtime profile
+profile = collect_profile_data() do
+    my_expensive_function()
+end
+
+# Quick summary (5 top hotspots with hints)
+quick_summary(profile, filter_fn=e -> !is_system_code(e))
+
+# Or ultra-concise (one-line summary)
+println(tldr_summary(profile, filter_fn=e -> !is_system_code(e)))
+
+# Category breakdown
+categorized = categorize_entries(profile.entries)
+print_compact_categories(categorized, profile.total_samples)
 
 # Get smart recommendations
-recs = generate_smart_recommendations(categorized, runtime.total_samples)
+recs = generate_smart_recommendations(categorized, profile.total_samples)
+for rec in recs
+    println(rec)
+end
 ```
 
 ## Allocation Profiling
@@ -90,42 +120,13 @@ optimized = collect_profile_data(() -> my_function())
 compare_profiles(baseline, optimized, top_n=20)
 ```
 
-## Dependencies
+## LLM Agent Guide
 
-- Julia 1.10+
-- JSON, Profile, Statistics, Dates, Printf, InteractiveUtils
+**For LLM agents**: See [LLM_GUIDE.md](LLM_GUIDE.md) for a comprehensive guide on using this package effectively, including:
+- Recommended workflows
+- Best practices for concise output
+- Filtering strategies
+- Custom categorization
+- Advanced features
 
-## Development
-
-### Running Tests
-
-The package includes a comprehensive test suite covering all API functions:
-
-```bash
-julia --project=. -e 'using Pkg; Pkg.test()'
-```
-
-Tests cover:
-- Profile data collection and I/O
-- All query functions
-- Allocation profiling
-- Categorization and recommendations
-- Type stability checking
-- CLI interface
-- Edge cases and error handling
-
-### CI/CD
-
-Continuous Integration is set up via GitHub Actions:
-- **CI.yml**: Tests on Julia 1.10, 1.11, and nightly across Linux, macOS, and Windows
-- **CompatHelper.yml**: Automatic dependency compatibility updates
-- **TagBot.yml**: Automatic version tagging
-- **Code Coverage**: Automatically uploaded to Codecov
-
-### For LLM Agents
-
-If you're an LLM agent working with this package, see [CLAUDE.md](CLAUDE.md) for comprehensive API documentation and usage patterns.
-
-### Contributing
-
-This package is designed to be standalone and has no dependencies on other domain-specific packages. Contributions are welcome!
+This package is designed to be standalone with minimal dependencies.

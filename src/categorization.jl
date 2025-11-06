@@ -294,3 +294,136 @@ function analyze_allocation_patterns(sites::Vector{AllocationSite};
 
     return recommendations
 end
+
+"""
+    quick_categorize(entries::Vector{ProfileEntry},
+                    total_samples::Int;
+                    min_percentage=5.0) -> String
+
+Generate a quick one-line summary of categorized hotspots.
+Returns a concise string suitable for LLM context.
+
+# Example
+```julia
+summary = quick_categorize(profile.entries, profile.total_samples)
+println(summary)  # "Main bottlenecks: Distance Calculation (23.5%), Search Operations (15.2%)"
+```
+"""
+function quick_categorize(entries::Vector{ProfileEntry},
+                         total_samples::Int;
+                         min_percentage=5.0)
+    categorized = categorize_entries(entries)
+
+    # Calculate percentages
+    significant = []
+    for (cat, cat_entries) in categorized
+        if !isempty(cat_entries)
+            cat_samples = sum(e.samples for e in cat_entries)
+            cat_pct = 100.0 * cat_samples / total_samples
+            if cat_pct >= min_percentage
+                cat_display = replace(cat, "_" => " ") |> titlecase
+                push!(significant, (cat_display, cat_pct))
+            end
+        end
+    end
+
+    if isempty(significant)
+        return "No major bottleneck categories detected (all below $(min_percentage)%)"
+    end
+
+    # Sort by percentage
+    sort!(significant, by=x->x[2], rev=true)
+
+    # Format
+    parts = ["$cat ($(round(pct, digits=1))%)" for (cat, pct) in significant]
+    return "Main bottlenecks: " * join(parts, ", ")
+end
+
+"""
+    general_categories() -> Dict{String, Vector{String}}
+
+More general categorization patterns suitable for any Julia code.
+"""
+function general_categories()
+    return Dict(
+        "linear_algebra" => ["mul!", "gemm", "gemv", "dot", "norm", "eigvals", "qr", "lu", "cholesky", "svd"],
+        "array_operations" => ["broadcast", "map", "reduce", "filter", "sort", "permute"],
+        "memory_allocation" => ["alloc", "malloc", "new", "copy", "similar"],
+        "io_operations" => ["read", "write", "print", "parse", "serialize"],
+        "string_operations" => ["string", "concat", "join", "split", "replace"],
+        "math_functions" => ["sqrt", "exp", "log", "sin", "cos", "pow"],
+        "iteration" => ["iterate", "next", "getindex", "setindex"],
+        "compilation" => ["compile", "inference", "codegen", "llvm"],
+    )
+end
+
+"""
+    categorize_with_custom(entries::Vector{ProfileEntry},
+                          custom_categories::Dict{String, Vector{String}};
+                          use_defaults=true) -> Dict{String, Vector{ProfileEntry}}
+
+Categorize entries with custom categories, optionally including defaults.
+
+# Arguments
+- `entries`: Profile entries to categorize
+- `custom_categories`: Custom category patterns
+- `use_defaults`: Include default categories (default: true)
+
+# Example
+```julia
+my_categories = Dict(
+    "database_ops" => ["query", "insert", "update", "transaction"],
+    "api_calls" => ["request", "response", "http"]
+)
+categorized = categorize_with_custom(entries, my_categories)
+```
+"""
+function categorize_with_custom(entries::Vector{ProfileEntry},
+                               custom_categories::Dict{String, Vector{String}};
+                               use_defaults=true)
+    categories = use_defaults ? merge(default_categories(), custom_categories) : custom_categories
+    return categorize_entries(entries, categories=categories)
+end
+
+"""
+    print_compact_categories(categorized::Dict{String, Vector{ProfileEntry}},
+                           total_samples::Int;
+                           min_percentage=3.0)
+
+Print categorized summary in a compact format.
+
+# Arguments
+- `categorized`: Result from categorize_entries
+- `total_samples`: Total number of profile samples
+- `min_percentage`: Minimum percentage to display (default 3%)
+"""
+function print_compact_categories(categorized::Dict{String, Vector{ProfileEntry}},
+                                 total_samples::Int;
+                                 min_percentage=3.0)
+    # Calculate and sort
+    cat_summary = []
+    for (cat, entries) in categorized
+        if !isempty(entries)
+            cat_samples = sum(e.samples for e in entries)
+            cat_pct = 100.0 * cat_samples / total_samples
+            if cat_pct >= min_percentage
+                push!(cat_summary, (cat, entries, cat_samples, cat_pct))
+            end
+        end
+    end
+
+    if isempty(cat_summary)
+        println("No categories above $(min_percentage)% threshold")
+        return
+    end
+
+    sort!(cat_summary, by=x->x[4], rev=true)
+
+    println("Category breakdown:")
+    for (cat, entries, samples, pct) in cat_summary
+        cat_display = replace(cat, "_" => " ") |> titlecase
+        top_entry = entries[1]
+        top_func = length(top_entry.func) > 30 ? top_entry.func[1:27] * "..." : top_entry.func
+        println(@sprintf("  %-25s %5.1f%% | Top: %s", cat_display, pct, top_func))
+    end
+end

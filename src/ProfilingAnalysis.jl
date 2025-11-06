@@ -70,11 +70,13 @@ export collect_profile_data, save_profile, load_profile
 # Query functions
 include("query.jl")
 export query_top_n, query_by_file, query_by_function, query_by_pattern,
-       query_by_filter, is_system_code
+       query_by_filter, is_system_code, is_likely_stdlib, is_noise,
+       filter_user_code, filter_by_threshold, default_system_patterns
 
 # Summary and reporting
 include("summary.jl")
-export print_entry_table, summarize_profile, generate_recommendations
+export print_entry_table, summarize_profile, generate_recommendations,
+       quick_summary, tldr_summary, compact_hotspots, analyze_profile_concise
 
 # Comparison
 include("comparison.jl")
@@ -88,9 +90,10 @@ export AllocationSite, AllocationProfile,
 
 # Categorization and smart recommendations
 include("categorization.jl")
-export categorize_entries, default_categories,
-       print_categorized_summary, generate_smart_recommendations,
-       analyze_allocation_patterns
+export categorize_entries, default_categories, general_categories,
+       print_categorized_summary, print_compact_categories,
+       generate_smart_recommendations, analyze_allocation_patterns,
+       quick_categorize, categorize_with_custom
 
 # Type stability helpers
 include("type_stability.jl")

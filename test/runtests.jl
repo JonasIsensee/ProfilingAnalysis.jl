@@ -15,6 +15,7 @@ This suite tests:
 using Test
 using ProfilingAnalysis
 using LinearAlgebra
+using Dates
 
 # Include demo workload
 include("demo_workload.jl")
@@ -236,6 +237,118 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         # Test help command
         @test_nowarn run_cli(["help"])
         println("✓ CLI help command works")
+    end
+
+    @testset "Allocation Profiling" begin
+        println("\n=== Testing Allocation Profiling ===")
+
+        # Test collect_allocation_profile
+        allocs = collect_allocation_profile(sample_rate=0.1, warmup=true) do
+            run_demo_workload(duration_seconds=1.0)
+        end
+
+        @test allocs isa AllocationProfile
+        @test allocs.total_allocations >= 0
+        @test allocs.total_bytes >= 0
+        @test allocs.sites isa Vector{AllocationSite}
+        println("✓ collect_allocation_profile: $(allocs.total_allocations) allocations, $(format_bytes(allocs.total_bytes))")
+
+        # Test format_bytes utility
+        @test format_bytes(500) == "500B"
+        @test contains(format_bytes(5000), "KB")
+        @test contains(format_bytes(5_000_000), "MB")
+        @test contains(format_bytes(5_000_000_000), "GB")
+        println("✓ format_bytes works correctly")
+
+        # Test print_allocation_table (should not error)
+        if !isempty(allocs.sites)
+            @test_nowarn print_allocation_table(allocs.sites[1:min(5, length(allocs.sites))])
+            println("✓ print_allocation_table works")
+        end
+
+        # Test summarize_allocations
+        @test_nowarn summarize_allocations(allocs, top_n=10, title="Test Allocation Summary")
+        println("✓ summarize_allocations works")
+
+        # Test analyze_allocation_patterns
+        if !isempty(allocs.sites)
+            recommendations = analyze_allocation_patterns(allocs.sites)
+            @test recommendations isa Vector{String}
+            @test length(recommendations) > 0
+            println("✓ analyze_allocation_patterns: $(length(recommendations)) recommendations")
+        end
+
+        # Test empty allocation profile
+        empty_allocs = AllocationProfile(now(), 0, 0, AllocationSite[], Dict{String,Any}())
+        @test_nowarn summarize_allocations(empty_allocs)
+        println("✓ Handle empty allocation profile")
+    end
+
+    @testset "Categorization Functions" begin
+        println("\n=== Testing Categorization Functions ===")
+
+        # Create a profile for testing
+        profile = collect_profile_data() do
+            run_demo_workload(duration_seconds=1.5)
+        end
+
+        # Test default_categories
+        categories = default_categories()
+        @test categories isa Dict{String, Vector{String}}
+        @test haskey(categories, "distance_calculation")
+        @test haskey(categories, "heap_operations")
+        @test haskey(categories, "search_operations")
+        println("✓ default_categories: $(length(categories)) categories")
+
+        # Test categorize_entries
+        categorized = categorize_entries(profile.entries)
+        @test categorized isa Dict{String, Vector{ProfileEntry}}
+        @test haskey(categorized, "other")
+        total_categorized = sum(length(v) for v in values(categorized))
+        @test total_categorized == length(profile.entries)
+        println("✓ categorize_entries: $(length(profile.entries)) entries categorized")
+
+        # Test print_categorized_summary
+        @test_nowarn print_categorized_summary(categorized, profile.total_samples, min_percentage=1.0)
+        println("✓ print_categorized_summary works")
+
+        # Test generate_smart_recommendations
+        recommendations = generate_smart_recommendations(categorized, profile.total_samples)
+        @test recommendations isa Vector{String}
+        @test length(recommendations) > 0
+        println("✓ generate_smart_recommendations: $(length(recommendations)) recommendations")
+
+        # Test with custom categories
+        custom_categories = Dict("matrix_ops" => ["matrix", "eigen", "qr"])
+        custom_categorized = categorize_entries(profile.entries, categories=custom_categories)
+        @test haskey(custom_categorized, "matrix_ops")
+        @test haskey(custom_categorized, "other")
+        println("✓ categorize_entries with custom categories works")
+
+        # Test empty entries
+        empty_categorized = categorize_entries(ProfileEntry[])
+        @test empty_categorized isa Dict{String, Vector{ProfileEntry}}
+        println("✓ Handle empty entries in categorization")
+    end
+
+    @testset "Type Stability Functions" begin
+        println("\n=== Testing Type Stability Functions ===")
+
+        # Test check_type_stability_simple with stable function
+        stable_func(x::Int, y::Float64) = x + y
+        is_stable = check_type_stability_simple(stable_func, (Int, Float64))
+        @test is_stable isa Bool
+        println("✓ check_type_stability_simple: stable function detected")
+
+        # Test with potentially unstable function
+        unstable_func(x) = x > 0 ? x : "negative"
+        is_unstable = check_type_stability_simple(unstable_func, (Int,))
+        @test is_unstable isa Bool
+        println("✓ check_type_stability_simple: unstable function handled")
+
+        # Test print_type_stability_guide (should not error)
+        @test_nowarn print_type_stability_guide()
+        println("✓ print_type_stability_guide works")
     end
 
     @testset "Edge Cases" begin

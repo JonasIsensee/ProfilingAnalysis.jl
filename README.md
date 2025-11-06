@@ -1,5 +1,9 @@
 # ProfilingAnalysis.jl
 
+[![CI](https://github.com/JonasIsensee/ProfilingAnalysis.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JonasIsensee/ProfilingAnalysis.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/JonasIsensee/ProfilingAnalysis.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JonasIsensee/ProfilingAnalysis.jl)
+[![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
+
 A comprehensive profiling analysis toolkit for Julia designed to make performance optimization accessible to LLM agents. Provides concise, actionable insights without the typical profiling bloat.
 
 ## Features
@@ -124,12 +128,5 @@ compare_profiles(baseline, optimized, top_n=20)
 - Filtering strategies
 - Custom categorization
 - Advanced features
-
-## Dependencies
-
-- Julia 1.10+
-- JSON, Profile, Statistics, Dates, Printf, InteractiveUtils
-
-## Development
 
 This package is designed to be standalone with minimal dependencies.

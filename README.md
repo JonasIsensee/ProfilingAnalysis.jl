@@ -1,5 +1,11 @@
 # ProfilingAnalysis.jl
 
+[![CI](https://github.com/JonasIsensee/ProfilingAnalysis.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JonasIsensee/ProfilingAnalysis.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/JonasIsensee/ProfilingAnalysis.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JonasIsensee/ProfilingAnalysis.jl)
+[![License](https://img.shields.io/github/license/JonasIsensee/ProfilingAnalysis.jl)](LICENSE)
+[![Julia Version](https://img.shields.io/badge/julia-v1.10%2B-blue)](https://julialang.org/)
+[![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
+
 A comprehensive profiling analysis toolkit for Julia with support for runtime profiling, allocation tracking, automatic categorization, and smart recommendations.
 
 ## Features
@@ -91,4 +97,35 @@ compare_profiles(baseline, optimized, top_n=20)
 
 ## Development
 
-This package is designed to become standalone. It currently lives in the ATRIANeighbors.jl repository but has no dependencies on that package.
+### Running Tests
+
+The package includes a comprehensive test suite covering all API functions:
+
+```bash
+julia --project=. -e 'using Pkg; Pkg.test()'
+```
+
+Tests cover:
+- Profile data collection and I/O
+- All query functions
+- Allocation profiling
+- Categorization and recommendations
+- Type stability checking
+- CLI interface
+- Edge cases and error handling
+
+### CI/CD
+
+Continuous Integration is set up via GitHub Actions:
+- **CI.yml**: Tests on Julia 1.10, 1.11, and nightly across Linux, macOS, and Windows
+- **CompatHelper.yml**: Automatic dependency compatibility updates
+- **TagBot.yml**: Automatic version tagging
+- **Code Coverage**: Automatically uploaded to Codecov
+
+### For LLM Agents
+
+If you're an LLM agent working with this package, see [CLAUDE.md](CLAUDE.md) for comprehensive API documentation and usage patterns.
+
+### Contributing
+
+This package is designed to be standalone and has no dependencies on other domain-specific packages. Contributions are welcome!

@@ -1,6 +1,6 @@
 # ProfilingAnalysis.jl
 
-A comprehensive profiling analysis toolkit for Julia with support for runtime profiling, allocation tracking, automatic categorization, and smart recommendations.
+A comprehensive profiling analysis toolkit for Julia designed to make performance optimization accessible to LLM agents. Provides concise, actionable insights without the typical profiling bloat.
 
 ## Features
 
@@ -13,27 +13,59 @@ A comprehensive profiling analysis toolkit for Julia with support for runtime pr
 - **JSON Save/Load** - Persistent profile storage
 - **Type Stability Helpers** - Detect dynamic dispatch issues
 
+### LLM-Friendly Features
+- **Ultra-Concise Output** - Hide noise, show only what matters
+- **Smart Filtering** - Automatically exclude system/stdlib bloat
+- **Quick Summaries** - One-line to 5-line summaries
+- **Contextual Hints** - Always show how to get more detail
+- **Compact Formats** - Space-efficient displays for multiple results
+
 ## Quick Start
+
+### Simplest Workflow (Recommended for LLMs)
 
 ```julia
 using ProfilingAnalysis
 
-# Collect runtime profile
-runtime = collect_profile_data() do
-    # Your workload here
+# 1. Collect profile
+profile = collect_profile_data() do
     my_expensive_function()
 end
 
-# Query top hotspots
-top_20 = query_top_n(runtime, 20, filter_fn=e -> !is_system_code(e))
-print_entry_table(top_20)
+# 2. Get concise analysis (all-in-one)
+analyze_profile_concise(profile)
+```
 
-# Auto-categorize by operation type
-categorized = categorize_entries(runtime.entries)
-print_categorized_summary(categorized, runtime.total_samples)
+This gives you:
+- One-line summary of the profile
+- Top 5 hotspots (compact format)
+- Category breakdown
+- Smart optimization recommendations
+- Hints for drilling deeper
+
+### Manual Step-by-Step
+
+```julia
+# Collect runtime profile
+profile = collect_profile_data() do
+    my_expensive_function()
+end
+
+# Quick summary (5 top hotspots with hints)
+quick_summary(profile, filter_fn=e -> !is_system_code(e))
+
+# Or ultra-concise (one-line summary)
+println(tldr_summary(profile, filter_fn=e -> !is_system_code(e)))
+
+# Category breakdown
+categorized = categorize_entries(profile.entries)
+print_compact_categories(categorized, profile.total_samples)
 
 # Get smart recommendations
-recs = generate_smart_recommendations(categorized, runtime.total_samples)
+recs = generate_smart_recommendations(categorized, profile.total_samples)
+for rec in recs
+    println(rec)
+end
 ```
 
 ## Allocation Profiling
@@ -84,6 +116,15 @@ optimized = collect_profile_data(() -> my_function())
 compare_profiles(baseline, optimized, top_n=20)
 ```
 
+## LLM Agent Guide
+
+**For LLM agents**: See [LLM_GUIDE.md](LLM_GUIDE.md) for a comprehensive guide on using this package effectively, including:
+- Recommended workflows
+- Best practices for concise output
+- Filtering strategies
+- Custom categorization
+- Advanced features
+
 ## Dependencies
 
 - Julia 1.10+
@@ -91,4 +132,4 @@ compare_profiles(baseline, optimized, top_n=20)
 
 ## Development
 
-This package is designed to become standalone. It currently lives in the ATRIANeighbors.jl repository but has no dependencies on that package.
+This package is designed to be standalone with minimal dependencies.

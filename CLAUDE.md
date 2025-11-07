@@ -464,28 +464,24 @@ using ProfilingAnalysis
 run_cli(["summary", "--input", "profile.json"])
 ```
 
-## Advanced Analysis (Optional Dependencies)
+## Advanced Analysis
 
 ProfilingAnalysis.jl integrates with two powerful Julia tools for deeper analysis:
 - **JET.jl** - Static type analysis and error detection
 - **SnoopCompile.jl** - Compilation latency and inference analysis
 
-These are **optional dependencies** - ProfilingAnalysis works without them, but they provide additional capabilities for AI agents.
+These dependencies are included automatically when you install ProfilingAnalysis.jl.
 
 ### Installation
 
 ```julia
-# Install JET.jl
 using Pkg
 
-# For Julia 1.12+
-Pkg.add("JET")
+# ProfilingAnalysis automatically includes JET and SnoopCompile
+Pkg.add("ProfilingAnalysis")
 
-# For Julia 1.11
-Pkg.add(name="JET", version="0.9")
-
-# Install SnoopCompile.jl (any Julia version)
-Pkg.add("SnoopCompile")
+# Or add from a local path during development
+Pkg.develop(path="/path/to/ProfilingAnalysis.jl")
 ```
 
 ### JET.jl Integration - Type Analysis
@@ -538,41 +534,34 @@ TypeIssue
 ```julia
 using ProfilingAnalysis
 
-# Check if JET is available
-if !check_jet_available()
-    println("JET.jl not installed. Install with: Pkg.add(\"JET\")")
-    # Fall back to basic type stability check
-    is_stable = check_type_stability_simple(my_function, (Int, Float64))
-else
-    # Use advanced JET analysis
-    analysis = analyze_types_with_jet(my_function, (1, 2.0))
+# Run type analysis
+analysis = analyze_types_with_jet(my_function, (1, 2.0))
 
-    if !analysis.type_stable
-        println("Type issues found:")
+if !analysis.type_stable
+    println("Type issues found:")
 
-        # Get high-priority issues
-        high_priority = get_high_priority_issues(analysis)
+    # Get high-priority issues
+    high_priority = get_high_priority_issues(analysis)
 
-        for issue in high_priority
-            println("\n$(issue.severity): $(issue.function_name)")
-            println("  Location: $(issue.file):$(issue.line)")
-            println("  Issue: $(issue.description)")
-            println("  Fix: $(issue.recommendation)")
-        end
-
-        # Group by type
-        by_type = group_by_type(analysis)
-        for (type, issues) in by_type
-            println("\n$(type): $(length(issues)) issues")
-        end
-    else
-        println("✓ Code is type-stable!")
+    for issue in high_priority
+        println("\n$(issue.severity): $(issue.function_name)")
+        println("  Location: $(issue.file):$(issue.line)")
+        println("  Issue: $(issue.description)")
+        println("  Fix: $(issue.recommendation)")
     end
 
-    # Or use quick check for simple pass/fail
-    msg = quick_type_check(my_function, (1, 2.0))
-    println(msg)
+    # Group by type
+    by_type = group_by_type(analysis)
+    for (type, issues) in by_type
+        println("\n$(type): $(length(issues)) issues")
+    end
+else
+    println("✓ Code is type-stable!")
 end
+
+# Or use quick check for simple pass/fail
+msg = quick_type_check(my_function, (1, 2.0))
+println(msg)
 ```
 
 #### Common Type Issues Detected
@@ -637,42 +626,37 @@ CompilationIssue
 ```julia
 using ProfilingAnalysis
 
-# Check if SnoopCompile is available
-if !check_snoopcompile_available()
-    println("SnoopCompile.jl not installed. Install with: Pkg.add(\"SnoopCompile\")")
-else
-    # Analyze compilation
-    analysis = analyze_compilation(
-        check_invalidations=false,  # Set true for load-time issues
-        check_inference=true,
-        top_n=20
-    ) do
-        my_algorithm(test_data)
-    end
-
-    println("Total inference time: $(round(analysis.total_inference_time, digits=3))s")
-    println("Issues found: $(length(analysis.issues))")
-
-    # Get critical issues
-    critical = get_critical_compilation_issues(analysis)
-    if !isempty(critical)
-        println("\nCritical compilation issues:")
-        for issue in critical
-            print_compilation_issue(issue)
-        end
-    end
-
-    # Group by type
-    by_type = group_compilation_by_type(analysis)
-    for (type, issues) in by_type
-        total_time = sum(i.time_impact for i in issues)
-        println("$(type): $(length(issues)) issues, $(round(total_time, digits=3))s")
-    end
-
-    # Or use quick check
-    msg = quick_compilation_check(() -> my_algorithm(test_data))
-    println(msg)
+# Analyze compilation
+analysis = analyze_compilation(
+    check_invalidations=false,  # Set true for load-time issues
+    check_inference=true,
+    top_n=20
+) do
+    my_algorithm(test_data)
 end
+
+println("Total inference time: $(round(analysis.total_inference_time, digits=3))s")
+println("Issues found: $(length(analysis.issues))")
+
+# Get critical issues
+critical = get_critical_compilation_issues(analysis)
+if !isempty(critical)
+    println("\nCritical compilation issues:")
+    for issue in critical
+        print_compilation_issue(issue)
+    end
+end
+
+# Group by type
+by_type = group_compilation_by_type(analysis)
+for (type, issues) in by_type
+    total_time = sum(i.time_impact for i in issues)
+    println("$(type): $(length(issues)) issues, $(round(total_time, digits=3))s")
+end
+
+# Or use quick check
+msg = quick_compilation_check(() -> my_algorithm(test_data))
+println(msg)
 ```
 
 #### Common Compilation Issues Detected
@@ -717,44 +701,33 @@ function optimize_code(user_function, test_args)
     categorized = categorize_entries(user_hotspots)
     runtime_recs = generate_smart_recommendations(categorized, profile.total_samples)
 
-    # 2. Type analysis (if JET available)
+    # 2. Type analysis
+    println("\n2. Running type analysis with JET.jl...")
     type_issues = TypeIssue[]
-    if check_jet_available()
-        println("\n2. Running type analysis with JET.jl...")
-        try
-            type_analysis = analyze_types_with_jet(user_function, test_args)
-            println("   Type stable: $(type_analysis.type_stable)")
-            println("   Type issues: $(length(type_analysis.issues))")
-            type_issues = get_high_priority_issues(type_analysis)
-        catch e
-            @warn "JET analysis failed" exception=e
-        end
-    else
-        println("\n2. Type analysis skipped (JET.jl not installed)")
-        # Fall back to basic check
-        is_stable = check_type_stability_simple(user_function, typeof(test_args))
-        println("   Basic type check: $(is_stable ? "stable" : "unstable")")
+    try
+        type_analysis = analyze_types_with_jet(user_function, test_args)
+        println("   Type stable: $(type_analysis.type_stable)")
+        println("   Type issues: $(length(type_analysis.issues))")
+        type_issues = get_high_priority_issues(type_analysis)
+    catch e
+        @warn "JET analysis failed" exception=e
     end
 
-    # 3. Compilation analysis (if SnoopCompile available)
+    # 3. Compilation analysis
+    println("\n3. Running compilation analysis with SnoopCompile.jl...")
     comp_issues = CompilationIssue[]
-    if check_snoopcompile_available()
-        println("\n3. Running compilation analysis with SnoopCompile.jl...")
-        try
-            comp_analysis = analyze_compilation(
-                () -> user_function(test_args...),
-                check_inference=true,
-                check_invalidations=false,
-                top_n=10
-            )
-            println("   Inference time: $(round(comp_analysis.total_inference_time, digits=3))s")
-            println("   Compilation issues: $(length(comp_analysis.issues))")
-            comp_issues = get_high_priority_compilation_issues(comp_analysis)
-        catch e
-            @warn "SnoopCompile analysis failed" exception=e
-        end
-    else
-        println("\n3. Compilation analysis skipped (SnoopCompile.jl not installed)")
+    try
+        comp_analysis = analyze_compilation(
+            () -> user_function(test_args...),
+            check_inference=true,
+            check_invalidations=false,
+            top_n=10
+        )
+        println("   Inference time: $(round(comp_analysis.total_inference_time, digits=3))s")
+        println("   Compilation issues: $(length(comp_analysis.issues))")
+        comp_issues = get_high_priority_compilation_issues(comp_analysis)
+    catch e
+        @warn "SnoopCompile analysis failed" exception=e
     end
 
     # 4. Memory allocation analysis
@@ -827,38 +800,20 @@ results = optimize_code(my_algorithm, (test_data,))
 
 ### Best Practices for Advanced Analysis
 
-1. **Check Availability First**
-   Always check if optional dependencies are available before using them:
-   ```julia
-   jet_available = check_jet_available()
-   sc_available = check_snoopcompile_available()
-   ```
-
-2. **Use Appropriate Tools for Problem Type**
+1. **Use Appropriate Tools for Problem Type**
    - **JET.jl** → Type stability, type errors (correctness issues)
    - **SnoopCompile.jl** → Compilation time, TTFX (latency issues)
    - **Runtime profiling** → Hot loops, algorithm bottlenecks (throughput)
    - **Allocation profiling** → Memory pressure, GC overhead
 
-3. **Filter System Code**
+2. **Filter System Code**
    Always filter system/stdlib code to focus on user code:
    ```julia
    analyze_types_with_jet(func, args, filter_system=true)
    analyze_compilation(workload, filter_system=true)
    ```
 
-4. **Handle Version Compatibility**
-   JET.jl has strict version requirements. Handle gracefully:
-   ```julia
-   if check_jet_available()
-       is_ok, msg = check_jet_version()
-       if !is_ok
-           @warn msg
-       end
-   end
-   ```
-
-5. **Progressive Analysis**
+3. **Progressive Analysis**
    Start with quick checks, dive deeper if needed:
    ```julia
    # Quick pass
@@ -871,12 +826,24 @@ results = optimize_code(my_algorithm, (test_data,))
    end
    ```
 
-6. **Combine Multiple Analyses**
+4. **Combine Multiple Analyses**
    Use all available tools for comprehensive understanding:
    - Runtime profiling shows WHERE time is spent
    - Type analysis shows WHY it's slow (runtime dispatch)
    - Compilation analysis shows WHEN slowness occurs (first call)
    - Allocation profiling shows WHAT causes memory pressure
+
+5. **Handle Analysis Failures Gracefully**
+   Wrap analysis in try-catch blocks for robustness:
+   ```julia
+   try
+       analysis = analyze_types_with_jet(func, args)
+       # Process results...
+   catch e
+       @warn "Type analysis failed" exception=e
+       # Fallback to basic checks...
+   end
+   ```
 
 ## Integration Tips
 
@@ -911,7 +878,7 @@ compare_profiles(profile, optimized)
 
 ## Dependencies
 
-### Core Dependencies (Required)
+### Core Dependencies
 - Julia 1.10+ (1.11+ recommended for CLI)
 - JSON.jl
 - Profile (stdlib)
@@ -920,16 +887,11 @@ compare_profiles(profile, optimized)
 - Printf (stdlib)
 - InteractiveUtils (stdlib)
 
-### Optional Dependencies (Advanced Analysis)
-- **JET.jl** - For advanced type analysis and error detection
-  - Julia 1.12+: JET v0.11+
-  - Julia 1.11: JET v0.9.x
-  - Install: `Pkg.add("JET")`
-- **SnoopCompile.jl** - For compilation analysis and inference profiling
-  - Any Julia version (1.10+)
-  - Install: `Pkg.add("SnoopCompile")`
+### Advanced Analysis Dependencies
+- **JET.jl** v0.9+ - Advanced type analysis and error detection
+- **SnoopCompile.jl** v2+ or v3+ - Compilation analysis and inference profiling
 
-The package works fully without optional dependencies, but they enable additional AI agent capabilities.
+All dependencies are automatically installed when you add ProfilingAnalysis.jl.
 
 ## Package Status
 

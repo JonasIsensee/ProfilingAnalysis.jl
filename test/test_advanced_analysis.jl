@@ -2,11 +2,6 @@
 test_advanced_analysis.jl
 
 Test suite for advanced analysis features (JET.jl and SnoopCompile.jl integrations).
-
-These tests check that the integration APIs work correctly, but they require
-optional dependencies (JET.jl and SnoopCompile.jl) to be installed.
-
-The tests gracefully handle missing dependencies and skip tests if needed.
 """
 
 using Test
@@ -148,121 +143,77 @@ using Dates
         println("✓ Printing functions work")
     end
 
-    @testset "JET.jl Integration - Availability Check" begin
+    @testset "JET.jl Integration - Basic Tests" begin
         println("\n=== Testing JET.jl Integration ===")
 
-        # Test availability check
-        jet_available = check_jet_available()
-        @test jet_available isa Bool
-        println("  JET.jl available: $jet_available")
-
-        if jet_available
-            # Test version check
-            is_ok, msg = check_jet_version()
-            @test is_ok isa Bool
-            @test msg isa String
-            println("  Version check: $msg")
-
-            # Test simple functions
-            function type_stable_example(x::Int, y::Float64)
-                return Float64(x) + y
-            end
-
-            function type_unstable_example(x)
-                if x > 0
-                    return x
-                else
-                    return "negative"
-                end
-            end
-
-            # Try type stability check (may not work if JET version incompatible)
-            try
-                stable = is_type_stable_jet(type_stable_example, (1, 2.0))
-                @test stable isa Bool
-                println("✓ is_type_stable_jet works")
-
-                unstable = is_type_stable_jet(type_unstable_example, (1,))
-                @test unstable isa Bool
-                println("✓ Type instability detected")
-
-                # Try full analysis
-                analysis = analyze_types_with_jet(type_stable_example, (1, 2.0))
-                @test analysis isa TypeAnalysis
-                @test analysis.analyzer == "JET.jl"
-                println("✓ analyze_types_with_jet works")
-
-                # Try quick check
-                msg = quick_type_check(type_stable_example, (1, 2.0))
-                @test msg isa String
-                println("✓ quick_type_check: $msg")
-
-            catch e
-                @warn "JET.jl tests skipped due to compatibility issues" exception=(e, catch_backtrace())
-                println("⚠ JET.jl tests skipped (version incompatibility)")
-            end
-
-        else
-            println("  Skipping JET.jl tests (not installed)")
-            println("  To install: using Pkg; Pkg.add(\"JET\")")
-
-            # Test that require_jet throws appropriate error
-            @test_throws ErrorException require_jet()
-            println("✓ require_jet throws error when JET unavailable")
+        # Test with type-stable function
+        function type_stable_example(x::Int, y::Float64)
+            return Float64(x) + y
         end
+
+        println("  Testing type-stable function...")
+        stable = is_type_stable_jet(type_stable_example, (1, 2.0))
+        @test stable isa Bool
+        println("  Type stable: $stable")
+
+        # Full analysis
+        analysis = analyze_types_with_jet(type_stable_example, (1, 2.0))
+        @test analysis isa TypeAnalysis
+        @test analysis.analyzer == "JET.jl"
+        println("  ✓ analyze_types_with_jet works for stable function")
+        println("    Issues found: $(length(analysis.issues))")
+
+        # Test with type-unstable function
+        function type_unstable_example(x)
+            if x > 0
+                return x
+            else
+                return "negative"
+            end
+        end
+
+        println("  Testing type-unstable function...")
+        unstable_analysis = analyze_types_with_jet(type_unstable_example, (1,))
+        @test unstable_analysis isa TypeAnalysis
+        println("  ✓ Type instability detected")
+        println("    Issues found: $(length(unstable_analysis.issues))")
+
+        # Quick check
+        msg = quick_type_check(type_stable_example, (1, 2.0))
+        @test msg isa String
+        println("  ✓ quick_type_check: $msg")
     end
 
-    @testset "SnoopCompile.jl Integration - Availability Check" begin
+    @testset "SnoopCompile.jl Integration - Basic Tests" begin
         println("\n=== Testing SnoopCompile.jl Integration ===")
 
-        # Test availability check
-        sc_available = check_snoopcompile_available()
-        @test sc_available isa Bool
-        println("  SnoopCompile.jl available: $sc_available")
-
-        if sc_available
-            # Create a simple workload
-            function test_workload()
-                # Some computation that causes inference
-                x = [1, 2, 3, 4, 5]
-                y = map(i -> i * 2, x)
-                sum(y)
-            end
-
-            # Try compilation analysis (may be slow)
-            try
-                analysis = analyze_compilation(
-                    test_workload,
-                    check_invalidations=false,
-                    check_inference=true,
-                    top_n=5
-                )
-
-                @test analysis isa CompilationAnalysis
-                @test analysis.analyzer == "SnoopCompile.jl"
-                @test analysis.total_inference_time >= 0.0
-                println("✓ analyze_compilation works")
-                println("  Total inference time: $(round(analysis.total_inference_time, digits=3))s")
-                println("  Issues found: $(length(analysis.issues))")
-
-                # Try quick check
-                msg = quick_compilation_check(test_workload)
-                @test msg isa String
-                println("✓ quick_compilation_check: $msg")
-
-            catch e
-                @warn "SnoopCompile.jl tests skipped due to compatibility issues" exception=(e, catch_backtrace())
-                println("⚠ SnoopCompile.jl tests skipped (compatibility issue)")
-            end
-
-        else
-            println("  Skipping SnoopCompile.jl tests (not installed)")
-            println("  To install: using Pkg; Pkg.add(\"SnoopCompile\")")
-
-            # Test that require_snoopcompile throws appropriate error
-            @test_throws ErrorException require_snoopcompile()
-            println("✓ require_snoopcompile throws error when unavailable")
+        # Create a simple workload
+        function test_workload()
+            # Some computation that causes inference
+            x = [1, 2, 3, 4, 5]
+            y = map(i -> i * 2, x)
+            sum(y)
         end
+
+        println("  Running compilation analysis...")
+        analysis = analyze_compilation(
+            test_workload,
+            check_invalidations=false,
+            check_inference=true,
+            top_n=5
+        )
+
+        @test analysis isa CompilationAnalysis
+        @test analysis.analyzer == "SnoopCompile.jl"
+        @test analysis.total_inference_time >= 0.0
+        println("  ✓ analyze_compilation works")
+        println("    Total inference time: $(round(analysis.total_inference_time, digits=3))s")
+        println("    Issues found: $(length(analysis.issues))")
+
+        # Quick check
+        msg = quick_compilation_check(test_workload)
+        @test msg isa String
+        println("  ✓ quick_compilation_check: $msg")
     end
 
     @testset "Combined Analysis Workflow" begin
@@ -277,43 +228,22 @@ using Dates
             return result
         end
 
-        println("\n  Example combined analysis workflow:")
-        println("  1. Check if advanced tools are available")
+        println("  1. Running type analysis...")
+        type_analysis = analyze_types_with_jet(test_function, (100,))
+        println("     Type stable: $(type_analysis.type_stable)")
+        println("     Issues found: $(length(type_analysis.issues))")
 
-        jet_available = check_jet_available()
-        sc_available = check_snoopcompile_available()
+        println("  2. Running compilation analysis...")
+        comp_analysis = analyze_compilation(
+            () -> test_function(100),
+            check_inference=true,
+            check_invalidations=false,
+            top_n=5
+        )
+        println("     Inference time: $(round(comp_analysis.total_inference_time, digits=3))s")
+        println("     Issues found: $(length(comp_analysis.issues))")
 
-        println("     JET.jl: $(jet_available ? "✓" : "✗")")
-        println("     SnoopCompile.jl: $(sc_available ? "✓" : "✗")")
-
-        if jet_available
-            println("\n  2. Run type analysis")
-            try
-                type_analysis = analyze_types_with_jet(test_function, (100,))
-                println("     Type stable: $(type_analysis.type_stable)")
-                println("     Issues found: $(length(type_analysis.issues))")
-            catch e
-                println("     Skipped (compatibility issue)")
-            end
-        end
-
-        if sc_available
-            println("\n  3. Run compilation analysis")
-            try
-                comp_analysis = analyze_compilation(
-                    () -> test_function(100),
-                    check_inference=true,
-                    check_invalidations=false,
-                    top_n=5
-                )
-                println("     Inference time: $(round(comp_analysis.total_inference_time, digits=3))s")
-                println("     Issues found: $(length(comp_analysis.issues))")
-            catch e
-                println("     Skipped (compatibility issue)")
-            end
-        end
-
-        println("\n  4. Fall back to basic type stability check")
+        println("  3. Running basic type stability check...")
         basic_stable = check_type_stability_simple(test_function, (Int,))
         println("     Basic check: $(basic_stable ? "type stable" : "type unstable")")
 
@@ -324,10 +254,4 @@ end
 
 println("\n" * "="^80)
 println("Advanced analysis tests complete!")
-if !check_jet_available() || !check_snoopcompile_available()
-    println("\nNote: Some tests were skipped due to missing optional dependencies.")
-    println("To enable full testing:")
-    println("  - JET.jl: using Pkg; Pkg.add(\"JET\")")
-    println("  - SnoopCompile.jl: using Pkg; Pkg.add(\"SnoopCompile\")")
-end
 println("="^80)

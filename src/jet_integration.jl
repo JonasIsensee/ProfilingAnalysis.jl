@@ -2,105 +2,9 @@
 JET.jl integration for ProfilingAnalysis.
 
 Provides AI agent-friendly interfaces to JET.jl's static type analysis capabilities.
-
-**Note:** JET.jl is an optional dependency. The functions in this module will only
-work if JET.jl is installed. Use `check_jet_available()` to verify availability.
-
-# Version Compatibility
-- Julia 1.12: Requires JET v0.11
-- Julia 1.11: Requires JET v0.9
-- Julia 1.10: May not be fully supported
-
-Call `check_jet_version()` to verify compatibility.
 """
 
-const JET_AVAILABLE = Ref(false)
-const JET_VERSION_OK = Ref(false)
-
-"""
-    check_jet_available() -> Bool
-
-Check if JET.jl is available in the current environment.
-"""
-function check_jet_available()
-    if !JET_AVAILABLE[]
-        try
-            # Try to load JET
-            @eval Main begin
-                if !isdefined(Main, :JET)
-                    using JET
-                end
-            end
-            JET_AVAILABLE[] = true
-        catch
-            JET_AVAILABLE[] = false
-        end
-    end
-    return JET_AVAILABLE[]
-end
-
-"""
-    check_jet_version() -> (Bool, String)
-
-Check if JET.jl version is compatible with current Julia version.
-
-Returns `(is_compatible, message)`.
-"""
-function check_jet_version()
-    if !check_jet_available()
-        return (false, "JET.jl is not installed. Install with: Pkg.add(\"JET\")")
-    end
-
-    julia_version = VERSION
-
-    # Get JET version if available
-    try
-        jet_module = Main.JET
-        # JET version checking - this is approximate since we can't easily get package version
-        # In practice, users should ensure they have the right version
-
-        if julia_version >= v"1.12"
-            msg = "Julia 1.12+ detected. Ensure JET v0.11+ is installed."
-            return (true, msg)
-        elseif julia_version >= v"1.11"
-            msg = "Julia 1.11 detected. Ensure JET v0.9.x is installed."
-            return (true, msg)
-        else
-            msg = "Julia $(VERSION). JET may not be fully supported. Recommended: Julia 1.11+"
-            return (false, msg)
-        end
-    catch e
-        return (false, "Error checking JET version: $e")
-    end
-end
-
-"""
-    require_jet()
-
-Throw an error with helpful message if JET is not available.
-"""
-function require_jet()
-    if !check_jet_available()
-        error("""
-        JET.jl is not available. To use type analysis features, install JET:
-
-        Julia 1.12+:
-            using Pkg
-            Pkg.add("JET")
-
-        Julia 1.11:
-            using Pkg
-            Pkg.add(name="JET", version="0.9")
-
-        Then restart your Julia session.
-        """)
-    end
-
-    is_ok, msg = check_jet_version()
-    if !is_ok
-        @warn msg
-    end
-end
+using JET
 
 """
     analyze_types_with_jet(func::Function, args::Tuple; filter_system=true) -> TypeAnalysis
@@ -129,8 +33,6 @@ print_type_analysis(analysis)
 ```
 """
 function analyze_types_with_jet(func::Function, args::Tuple; filter_system=true)
-    require_jet()
-
     issues = TypeIssue[]
     metadata = Dict{String, Any}(
         "function" => string(func),
@@ -173,29 +75,17 @@ function analyze_stability_jet(func::Function, args::Tuple, filter_system::Bool)
     issues = TypeIssue[]
 
     try
-        # Capture output from JET
-        io = IOBuffer()
+        # Run @report_opt and capture result
+        result = JET.@report_opt func(args...)
 
-        # Run @report_opt
-        result = @eval Main begin
-            JET.@report_opt $(func)($(args)...)
-        end
-
-        # Parse result
-        # JET returns a JET.JETCallResult object with reports
-        if isdefined(Main.JET, :get_reports)
-            reports = Main.JET.get_reports(result)
-
-            for report in reports
+        # Get reports from result
+        if !isempty(JET.get_reports(result))
+            for report in JET.get_reports(result)
                 issue = parse_jet_report(report, :instability, filter_system)
                 if !isnothing(issue)
                     push!(issues, issue)
                 end
             end
-        else
-            # Fallback: try to extract information from result directly
-            # This is version-dependent, so we're being defensive
-            @warn "Could not extract structured reports from JET. Analysis may be incomplete."
         end
 
     catch e
@@ -228,15 +118,11 @@ function analyze_type_errors_jet(func::Function, args::Tuple, filter_system::Boo
 
     try
         # Run @report_call
-        result = @eval Main begin
-            JET.@report_call $(func)($(args)...)
-        end
+        result = JET.@report_call func(args...)
 
         # Parse result
-        if isdefined(Main.JET, :get_reports)
-            reports = Main.JET.get_reports(result)
-
-            for report in reports
+        if !isempty(JET.get_reports(result))
+            for report in JET.get_reports(result)
                 issue = parse_jet_report(report, :type_error, filter_system)
                 if !isnothing(issue)
                     push!(issues, issue)
@@ -261,22 +147,22 @@ Returns `nothing` if the report should be filtered out.
 function parse_jet_report(report, default_type::Symbol, filter_system::Bool)
     try
         # Extract information from report
-        # JET report structure varies by version, so we're being defensive
-
-        # Get file and line
         file = ""
         line = 0
         func_name = ""
 
+        # Get function signature
         if hasfield(typeof(report), :sig)
             sig = report.sig
             func_name = string(sig)
         end
 
+        # Get file location
         if hasfield(typeof(report), :file)
             file = string(report.file)
         end
 
+        # Get line number
         if hasfield(typeof(report), :line)
             line = report.line
         end
@@ -390,11 +276,6 @@ end
 ```
 """
 function is_type_stable_jet(func::Function, args::Tuple)
-    if !check_jet_available()
-        @warn "JET not available, falling back to basic type stability check"
-        return check_type_stability_simple(func, args)
-    end
-
     analysis = analyze_types_with_jet(func, args, filter_system=true)
     return analysis.type_stable
 end
@@ -407,10 +288,6 @@ Quick type check with simple pass/fail message.
 Returns a user-friendly message about type stability.
 """
 function quick_type_check(func::Function, args::Tuple)
-    if !check_jet_available()
-        return "JET not available. Install with: Pkg.add(\"JET\")"
-    end
-
     analysis = analyze_types_with_jet(func, args)
 
     if isempty(analysis.issues)

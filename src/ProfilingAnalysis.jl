@@ -110,8 +110,7 @@ export TypeIssue, TypeAnalysis,
        print_type_issue, print_type_analysis
 
 include("jet_integration.jl")
-export check_jet_available, check_jet_version,
-       analyze_types_with_jet, is_type_stable_jet, quick_type_check
+export analyze_types_with_jet, is_type_stable_jet, quick_type_check
 
 # Compilation analysis (SnoopCompile.jl integration)
 include("compilation_analysis.jl")
@@ -121,8 +120,7 @@ export CompilationIssue, CompilationAnalysis,
        print_compilation_issue, print_compilation_analysis
 
 include("snoopcompile_integration.jl")
-export check_snoopcompile_available,
-       analyze_compilation, quick_compilation_check
+export analyze_compilation, quick_compilation_check
 
 # CLI interface
 include("cli.jl")

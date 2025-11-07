@@ -2,52 +2,9 @@
 SnoopCompile.jl integration for ProfilingAnalysis.
 
 Provides AI agent-friendly interfaces to SnoopCompile.jl's compilation analysis.
-
-**Note:** SnoopCompile.jl is an optional dependency. The functions in this module
-will only work if SnoopCompile.jl is installed. Use `check_snoopcompile_available()`
-to verify availability.
 """
 
-const SNOOPCOMPILE_AVAILABLE = Ref(false)
-
-"""
-    check_snoopcompile_available() -> Bool
-
-Check if SnoopCompile.jl is available in the current environment.
-"""
-function check_snoopcompile_available()
-    if !SNOOPCOMPILE_AVAILABLE[]
-        try
-            @eval Main begin
-                if !isdefined(Main, :SnoopCompile)
-                    using SnoopCompile
-                end
-            end
-            SNOOPCOMPILE_AVAILABLE[] = true
-        catch
-            SNOOPCOMPILE_AVAILABLE[] = false
-        end
-    end
-    return SNOOPCOMPILE_AVAILABLE[]
-end
-
-"""
-    require_snoopcompile()
-
-Throw an error with helpful message if SnoopCompile is not available.
-"""
-function require_snoopcompile()
-    if !check_snoopcompile_available()
-        error("""
-        SnoopCompile.jl is not available. To use compilation analysis features:
-
-            using Pkg
-            Pkg.add("SnoopCompile")
-
-        Then restart your Julia session.
-        """)
-    end
-end
+using SnoopCompile
 
 """
     analyze_compilation(workload_fn::Function;
@@ -90,8 +47,6 @@ function analyze_compilation(workload_fn::Function;
                             check_inference=true,
                             filter_system=true,
                             top_n=20)
-    require_snoopcompile()
-
     issues = CompilationIssue[]
     total_inference_time = 0.0
     metadata = Dict{String, Any}()
@@ -139,23 +94,20 @@ function analyze_inference_snoopcompile(workload_fn::Function, filter_system::Bo
     total_time = 0.0
 
     try
-        # Run @snoopi_deep
-        tinf = @eval Main begin
-            # Warmup
-            $(workload_fn)()
+        # Warmup
+        workload_fn()
 
-            # Profile
-            SnoopCompile.@snoopi_deep $(workload_fn)()
-        end
+        # Profile inference
+        tinf = SnoopCompile.@snoopi_deep workload_fn()
 
         # Get total inference time
-        total_time = Main.SnoopCompile.inclusive(tinf)
+        total_time = SnoopCompile.inclusive(tinf)
 
         # Flatten to get all inference frames
-        flat = Main.SnoopCompile.flatten(tinf)
+        flat = SnoopCompile.flatten(tinf)
 
         # Sort by exclusive time (time spent in this function, not callees)
-        sort!(flat, by=x -> Main.SnoopCompile.exclusive(x), rev=true)
+        sort!(flat, by=x -> SnoopCompile.exclusive(x), rev=true)
 
         # Process top N entries
         count = 0
@@ -179,8 +131,8 @@ function analyze_inference_snoopcompile(workload_fn::Function, filter_system::Bo
                     continue
                 end
 
-                exc_time = Main.SnoopCompile.exclusive(frame)
-                inc_time = Main.SnoopCompile.inclusive(frame)
+                exc_time = SnoopCompile.exclusive(frame)
+                inc_time = SnoopCompile.inclusive(frame)
 
                 # Only include significant inference times
                 if exc_time < 0.001  # Less than 1ms
@@ -255,7 +207,7 @@ function analyze_triggers_snoopcompile(tinf, filter_system::Bool, top_n::Int)
 
     try
         # Get inference triggers
-        triggers = Main.SnoopCompile.inference_triggers(tinf)
+        triggers = SnoopCompile.inference_triggers(tinf)
 
         count = 0
         for trigger in triggers
@@ -264,7 +216,7 @@ function analyze_triggers_snoopcompile(tinf, filter_system::Bool, top_n::Int)
             end
 
             # Extract trigger info
-            caller = Main.SnoopCompile.callerinstance(trigger)
+            caller = SnoopCompile.callerinstance(trigger)
 
             if caller isa Core.MethodInstance
                 method = caller.def
@@ -283,7 +235,7 @@ function analyze_triggers_snoopcompile(tinf, filter_system::Bool, top_n::Int)
                     current = trigger
                     for _ in 1:5  # Limit depth
                         try
-                            frame = Main.SnoopCompile.callingframe(current)
+                            frame = SnoopCompile.callingframe(current)
                             if !isnothing(frame)
                                 push!(chain, string(frame))
                                 current = frame
@@ -332,7 +284,7 @@ function analyze_stale_instances(tinf, filter_system::Bool)
     issues = CompilationIssue[]
 
     try
-        stale = Main.SnoopCompile.staleinstances(tinf)
+        stale = SnoopCompile.staleinstances(tinf)
 
         for node in stale
             mi = node.mi
@@ -386,15 +338,13 @@ function analyze_invalidations_snoopcompile(workload_fn::Function, filter_system
 
     try
         # Run @snoop_invalidations
-        invalidations = @eval Main begin
-            SnoopCompile.@snoop_invalidations $(workload_fn)()
-        end
+        invalidations = SnoopCompile.@snoop_invalidations workload_fn()
 
         # Parse invalidations into trees
-        trees = Main.SnoopCompile.invalidation_trees(invalidations)
+        trees = SnoopCompile.invalidation_trees(invalidations)
 
         # Extract unique invalidated instances
-        uinv = Main.SnoopCompile.uinvalidated(invalidations)
+        uinv = SnoopCompile.uinvalidated(invalidations)
 
         # Sort by frequency (if available)
         # Process top N
@@ -486,10 +436,6 @@ Quick compilation check with simple pass/fail message.
 Returns a user-friendly message about compilation issues.
 """
 function quick_compilation_check(workload_fn::Function)
-    if !check_snoopcompile_available()
-        return "SnoopCompile not available. Install with: Pkg.add(\"SnoopCompile\")"
-    end
-
     analysis = analyze_compilation(workload_fn, check_inference=true, check_invalidations=false)
 
     if isempty(analysis.issues)

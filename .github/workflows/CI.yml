@@ -28,9 +28,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.10'  # Minimum supported version
-          - '1.11'  # Latest stable
-          - 'nightly'  # Nightly builds
+          - '1.10'  # LTS
+          - '1'     # Latest stable release
         os:
           - ubuntu-latest
           - macOS-latest
@@ -42,10 +41,6 @@ jobs:
           - os: ubuntu-latest
             version: '1.10'
             arch: x86
-        exclude:
-          # Exclude nightly on Windows to save CI time
-          - os: windows-latest
-            version: 'nightly'
     steps:
       - uses: actions/checkout@v4
 
@@ -63,35 +58,14 @@ jobs:
           coverage: true
 
       - uses: julia-actions/julia-processcoverage@v1
-        if: matrix.version == '1.11' && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
 
       - uses: codecov/codecov-action@v4
-        if: matrix.version == '1.11' && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-      statuses: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: julia-actions/setup-julia@v2
-        with:
-          version: '1.11'
-
-      - name: Check documentation files
-        run: |
-          echo "Checking documentation files..."
-          test -f README.md && echo "✓ README.md exists"
-          test -f CLAUDE.md && echo "✓ CLAUDE.md exists"
-          echo "Documentation check passed!"
 
   format-check:
     name: Format Check
@@ -112,7 +86,7 @@ jobs:
           using JuliaFormatter
           formatted = format(".", verbose=true, overwrite=false)
           if !formatted
-              @warn "Code formatting issues detected. Run `using JuliaFormatter; format(\".\")` locally to fix."
+              @error "Code formatting issues detected. Run `using JuliaFormatter; format(\".\")` locally to fix."
+              exit(1)
           end
           '
-        continue-on-error: true

@@ -65,7 +65,12 @@ export ProfileEntry, ProfileData
 
 # Collection and I/O
 include("collection.jl")
-export collect_profile_data, save_profile, load_profile
+export collect_profile_data,
+    save_profile,
+    load_profile,
+    benchmark_optimization,
+    compare_benchmark_results,
+    list_benchmarks
 
 # Query functions
 include("query.jl")
@@ -74,11 +79,16 @@ export query_top_n,
     query_by_function,
     query_by_pattern,
     query_by_filter,
+    query_by_regex,
+    query_by_regex_function,
+    query_by_regex_file,
     is_system_code,
     is_likely_stdlib,
     is_noise,
     filter_user_code,
     filter_by_threshold,
+    combine_filters,
+    negate_filter,
     default_system_patterns
 
 # Summary and reporting
@@ -119,6 +129,10 @@ export categorize_entries,
 # Type stability helpers
 include("type_stability.jl")
 export check_type_stability_simple, print_type_stability_guide
+
+# Export utilities
+include("export.jl")
+export export_to_csv, export_to_markdown, export_allocations_to_csv
 
 # CLI interface
 include("cli.jl")

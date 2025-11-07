@@ -2,7 +2,8 @@
 ProfilingAnalysis.jl
 
 A comprehensive profiling analysis tool for Julia code with support for
-runtime profiling, allocation tracking, and type stability checking.
+runtime profiling, allocation tracking, type stability checking, and
+compilation analysis.
 
 # Features
 - Collect runtime profile data from any Julia workload
@@ -12,6 +13,8 @@ runtime profiling, allocation tracking, and type stability checking.
 - Save/load profiles in JSON format
 - Compare profiles to track performance changes
 - Type stability checking helpers
+- JET.jl integration for advanced type analysis (optional)
+- SnoopCompile.jl integration for compilation analysis (optional)
 
 # Basic Usage
 
@@ -98,6 +101,28 @@ export categorize_entries, default_categories, general_categories,
 # Type stability helpers
 include("type_stability.jl")
 export check_type_stability_simple, print_type_stability_guide
+
+# Advanced type analysis (JET.jl integration)
+include("type_analysis.jl")
+export TypeIssue, TypeAnalysis,
+       get_critical_issues, get_high_priority_issues,
+       group_by_type, group_by_file, sort_by_severity,
+       print_type_issue, print_type_analysis
+
+include("jet_integration.jl")
+export check_jet_available, check_jet_version,
+       analyze_types_with_jet, is_type_stable_jet, quick_type_check
+
+# Compilation analysis (SnoopCompile.jl integration)
+include("compilation_analysis.jl")
+export CompilationIssue, CompilationAnalysis,
+       get_critical_compilation_issues, get_high_priority_compilation_issues,
+       group_compilation_by_type, sort_compilation_by_impact,
+       print_compilation_issue, print_compilation_analysis
+
+include("snoopcompile_integration.jl")
+export check_snoopcompile_available,
+       analyze_compilation, quick_compilation_check
 
 # CLI interface
 include("cli.jl")

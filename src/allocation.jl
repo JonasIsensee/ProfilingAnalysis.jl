@@ -32,7 +32,7 @@ struct AllocationProfile
     total_allocations::Int
     total_bytes::Int
     sites::Vector{AllocationSite}
-    metadata::Dict{String, Any}
+    metadata::Dict{String,Any}
 end
 
 """
@@ -59,10 +59,12 @@ allocs = collect_allocation_profile(sample_rate=0.1) do
 end
 ```
 """
-function collect_allocation_profile(workload_fn::Function;
-                                   warmup=true,
-                                   sample_rate=0.1,
-                                   metadata=Dict{String,Any}())
+function collect_allocation_profile(
+    workload_fn::Function;
+    warmup = true,
+    sample_rate = 0.1,
+    metadata = Dict{String,Any}(),
+)
     # Warmup
     if warmup
         println("Warming up (compilation)...")
@@ -82,8 +84,8 @@ function collect_allocation_profile(workload_fn::Function;
     end
 
     # Aggregate by location
-    alloc_counts = Dict{Tuple{String,String,Int}, Int}()
-    alloc_bytes = Dict{Tuple{String,String,Int}, Int}()
+    alloc_counts = Dict{Tuple{String,String,Int},Int}()
+    alloc_bytes = Dict{Tuple{String,String,Int},Int}()
 
     total_allocs = 0
     total_bytes = 0
@@ -109,13 +111,18 @@ function collect_allocation_profile(workload_fn::Function;
 
     # Create allocation sites
     sites = [
-        AllocationSite(func, file, line, count, alloc_bytes[(func,file,line)],
-                      alloc_bytes[(func,file,line)] / count)
-        for ((func, file, line), count) in alloc_counts
+        AllocationSite(
+            func,
+            file,
+            line,
+            count,
+            alloc_bytes[(func, file, line)],
+            alloc_bytes[(func, file, line)] / count,
+        ) for ((func, file, line), count) in alloc_counts
     ]
 
     # Sort by total bytes (descending)
-    sort!(sites, by=s->s.total_bytes, rev=true)
+    sort!(sites, by = s->s.total_bytes, rev = true)
 
     return AllocationProfile(now(), total_allocs, total_bytes, sites, metadata)
 end
@@ -143,27 +150,40 @@ end
 
 Print allocation sites in formatted table.
 """
-function print_allocation_table(sites::Vector{AllocationSite}; max_width=120)
+function print_allocation_table(sites::Vector{AllocationSite}; max_width = 120)
     if isempty(sites)
         println("No allocation sites found.")
         return
     end
 
-    println(@sprintf("%-5s %-10s %-12s %-10s %-s",
-                    "Rank", "Count", "Total Bytes", "Avg Bytes", "Function @ File:Line"))
+    println(
+        @sprintf(
+            "%-5s %-10s %-12s %-10s %-s",
+            "Rank",
+            "Count",
+            "Total Bytes",
+            "Avg Bytes",
+            "Function @ File:Line"
+        )
+    )
     println("-" ^ max_width)
 
     for (idx, site) in enumerate(sites)
         location = "$(site.func) @ $(site.file):$(site.line)"
         if length(location) > max_width - 45
-            location = location[1:max_width-48] * "..."
+            location = location[1:(max_width-48)] * "..."
         end
 
-        println(@sprintf("%-5d %-10d %-12s %-10s %s",
-                        idx, site.count,
-                        format_bytes(site.total_bytes),
-                        format_bytes(round(Int64, site.avg_bytes)),
-                        location))
+        println(
+            @sprintf(
+                "%-5d %-10d %-12s %-10s %s",
+                idx,
+                site.count,
+                format_bytes(site.total_bytes),
+                format_bytes(round(Int64, site.avg_bytes)),
+                location
+            )
+        )
     end
 end
 
@@ -175,10 +195,12 @@ end
 
 Generate summary of allocation profile.
 """
-function summarize_allocations(profile::AllocationProfile;
-                               filter_fn=nothing,
-                               top_n=20,
-                               title="Allocation Summary")
+function summarize_allocations(
+    profile::AllocationProfile;
+    filter_fn = nothing,
+    top_n = 20,
+    title = "Allocation Summary",
+)
     println("=" ^ 80)
     println(title)
     println("=" ^ 80)
@@ -194,7 +216,9 @@ function summarize_allocations(profile::AllocationProfile;
         sites = filter(filter_fn, sites)
         filtered_bytes = sum(s.total_bytes for s in sites)
         pct_filtered = 100.0 * filtered_bytes / profile.total_bytes
-        println("Filtered bytes: $(format_bytes(filtered_bytes)) ($(round(pct_filtered, digits=2))%)")
+        println(
+            "Filtered bytes: $(format_bytes(filtered_bytes)) ($(round(pct_filtered, digits=2))%)",
+        )
         println()
     end
 

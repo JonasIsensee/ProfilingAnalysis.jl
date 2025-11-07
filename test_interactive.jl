@@ -16,7 +16,7 @@ println()
 # Collect runtime profile
 println("🔬 Collecting runtime profile...")
 runtime = collect_profile_data() do
-    run_demo_workload(duration_seconds=2.0)
+    run_demo_workload(duration_seconds = 2.0)
 end
 
 println()
@@ -26,7 +26,7 @@ println()
 # Show top hotspots
 println("📊 Top 15 hotspots (non-system code):")
 println()
-top_15 = query_top_n(runtime, 15, filter_fn=e -> !is_system_code(e))
+top_15 = query_top_n(runtime, 15, filter_fn = e -> !is_system_code(e))
 print_entry_table(top_15)
 println()
 
@@ -34,7 +34,7 @@ println()
 println("🏷️  Automatic categorization:")
 println()
 categorized = categorize_entries(runtime.entries)
-print_categorized_summary(categorized, runtime.total_samples, min_percentage=2.0)
+print_categorized_summary(categorized, runtime.total_samples, min_percentage = 2.0)
 
 # Smart recommendations
 println("💡 Smart Recommendations:")
@@ -52,7 +52,7 @@ println("=" ^ 80)
 println()
 
 println("🔬 Collecting allocation profile (10% sampling)...")
-allocs = collect_allocation_profile(sample_rate=0.1) do
+allocs = collect_allocation_profile(sample_rate = 0.1) do
     # Smaller workload for allocation profiling
     matrix_multiply(50, 10)
     solve_linear_system(50, 5)
@@ -63,7 +63,7 @@ println("✅ Allocation profile collected")
 println()
 
 # Show allocation summary
-summarize_allocations(allocs, top_n=15)
+summarize_allocations(allocs, top_n = 15)
 println()
 
 # Allocation recommendations

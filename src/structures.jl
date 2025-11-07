@@ -28,5 +28,5 @@ struct ProfileData
     timestamp::DateTime
     total_samples::Int
     entries::Vector{ProfileEntry}
-    metadata::Dict{String, Any}
+    metadata::Dict{String,Any}
 end

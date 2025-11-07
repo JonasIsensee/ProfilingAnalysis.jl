@@ -19,7 +19,7 @@ Compare two profile datasets to identify performance changes.
 # Returns
 - Prints comparison summary
 """
-function compare_profiles(profile1::ProfileData, profile2::ProfileData; top_n=20)
+function compare_profiles(profile1::ProfileData, profile2::ProfileData; top_n = 20)
     println("=" ^ 80)
     println("Profile Comparison")
     println("=" ^ 80)
@@ -57,32 +57,44 @@ function compare_profiles(profile1::ProfileData, profile2::ProfileData; top_n=20
     end
 
     # Sort by absolute difference
-    sort!(differences, by=x -> abs(x[2]), rev=true)
+    sort!(differences, by = x -> abs(x[2]), rev = true)
 
     println("=" ^ 80)
     println("Top $top_n Changes (by absolute sample difference)")
     println("=" ^ 80)
     println()
-    println(@sprintf("%-5s %-10s %-10s %-s", "Rank", "Δ Samples", "Δ %", "Function @ File:Line"))
+    println(
+        @sprintf(
+            "%-5s %-10s %-10s %-s",
+            "Rank",
+            "Δ Samples",
+            "Δ %",
+            "Function @ File:Line"
+        )
+    )
     println("-" ^ 80)
 
-    for (idx, (entry, diff, pct_diff)) in enumerate(differences[1:min(top_n, length(differences))])
+    for (idx, (entry, diff, pct_diff)) in
+        enumerate(differences[1:min(top_n, length(differences))])
         location = "$(entry.func) @ $(entry.file):$(entry.line)"
         if length(location) > 60
             location = location[1:57] * "..."
         end
 
         sign = diff > 0 ? "+" : ""
-        println(@sprintf("%-5d %s%-9d %s%-9.2f %s",
-            idx, sign, diff, sign, pct_diff, location))
+        println(
+            @sprintf("%-5d %s%-9d %s%-9.2f %s", idx, sign, diff, sign, pct_diff, location)
+        )
     end
     println()
 
     # Summary statistics
-    total_increase = sum(d[2] for d in differences if d[2] > 0; init=0)
-    total_decrease = sum(d[2] for d in differences if d[2] < 0; init=0)
+    total_increase = sum(d[2] for d in differences if d[2] > 0; init = 0)
+    total_decrease = sum(d[2] for d in differences if d[2] < 0; init = 0)
 
     println("Summary:")
-    println("  Total sample changes: $total_increase (increases), $total_decrease (decreases)")
+    println(
+        "  Total sample changes: $total_increase (increases), $total_decrease (decreases)",
+    )
     println()
 end

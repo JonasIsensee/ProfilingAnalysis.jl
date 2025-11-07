@@ -154,7 +154,7 @@ function run_cli(args::Vector{String})
             filter_system = get(parsed, "no-system", "true") == "true"
             top_n = parse(Int, get(parsed, "top", "20"))
             filter_fn = filter_system ? (e -> !is_system_code(e)) : nothing
-            query_top_n(profile, top_n, filter_fn=filter_fn)
+            query_top_n(profile, top_n, filter_fn = filter_fn)
         end
 
         if haskey(parsed, "top")
@@ -177,7 +177,7 @@ function run_cli(args::Vector{String})
         top_n = parse(Int, get(parsed, "top", "20"))
         title = get(parsed, "title", "Profile Summary")
 
-        summarize_profile(profile, top_n=top_n, title=title)
+        summarize_profile(profile, top_n = top_n, title = title)
 
     elseif command == "compare"
         positional = get(parsed, "positional", [])
@@ -198,7 +198,7 @@ function run_cli(args::Vector{String})
         profile2 = load_profile(file2)
         top_n = parse(Int, get(parsed, "top", "20"))
 
-        compare_profiles(profile1, profile2, top_n=top_n)
+        compare_profiles(profile1, profile2, top_n = top_n)
 
     else
         println("Unknown command: $command")

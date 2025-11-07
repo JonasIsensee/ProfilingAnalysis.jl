@@ -28,9 +28,11 @@ for (cat, entries) in categorized
 end
 ```
 """
-function categorize_entries(entries::Vector{ProfileEntry};
-                           categories=default_categories())
-    result = Dict{String, Vector{ProfileEntry}}()
+function categorize_entries(
+    entries::Vector{ProfileEntry};
+    categories = default_categories(),
+)
+    result = Dict{String,Vector{ProfileEntry}}()
 
     # Initialize empty vectors for each category
     for cat in keys(categories)
@@ -45,7 +47,12 @@ function categorize_entries(entries::Vector{ProfileEntry};
         # Try to match against each category
         matched = false
         for (cat_name, patterns) in categories
-            if any(p -> contains(func_lower, lowercase(p)) ||  contains(file_lower, lowercase(p)), patterns)
+            if any(
+                p ->
+                    contains(func_lower, lowercase(p)) ||
+                    contains(file_lower, lowercase(p)),
+                patterns,
+            )
                 push!(result[cat_name], entry)
                 matched = true
                 break  # Only assign to first matching category
@@ -88,9 +95,11 @@ Print summary of categorized hotspots.
 - `total_samples`: Total number of profile samples
 - `min_percentage`: Minimum percentage to display category (default 5%)
 """
-function print_categorized_summary(categorized::Dict{String, Vector{ProfileEntry}},
-                                  total_samples::Int;
-                                  min_percentage=5.0)
+function print_categorized_summary(
+    categorized::Dict{String,Vector{ProfileEntry}},
+    total_samples::Int;
+    min_percentage = 5.0,
+)
     println("=" ^ 80)
     println("Categorized Hotspots")
     println("=" ^ 80)
@@ -109,7 +118,7 @@ function print_categorized_summary(categorized::Dict{String, Vector{ProfileEntry
     end
 
     # Sort by percentage (descending)
-    sort!(cat_summary, by=x->x[4], rev=true)
+    sort!(cat_summary, by = x->x[4], rev = true)
 
     for (cat, entries, samples, pct) in cat_summary
         cat_display = replace(cat, "_" => " ") |> titlecase
@@ -118,7 +127,9 @@ function print_categorized_summary(categorized::Dict{String, Vector{ProfileEntry
         # Show top 3 entries in this category
         for entry in entries[1:min(3, length(entries))]
             file_short = basename(entry.file)
-            println("  • $(entry.func) @ $file_short:$(entry.line) - $(entry.samples) samples")
+            println(
+                "  • $(entry.func) @ $file_short:$(entry.line) - $(entry.samples) samples",
+            )
         end
         println()
     end
@@ -148,9 +159,11 @@ Generate context-aware recommendations based on categorized hotspots.
 # Returns
 - Vector of recommendation strings
 """
-function generate_smart_recommendations(categorized::Dict{String, Vector{ProfileEntry}},
-                                       total_samples::Int;
-                                       threshold_percentages=default_thresholds())
+function generate_smart_recommendations(
+    categorized::Dict{String,Vector{ProfileEntry}},
+    total_samples::Int;
+    threshold_percentages = default_thresholds(),
+)
     recommendations = String[]
 
     for (cat, entries) in categorized
@@ -168,8 +181,14 @@ function generate_smart_recommendations(categorized::Dict{String, Vector{Profile
     end
 
     if isempty(recommendations)
-        push!(recommendations, "✅ No major bottlenecks detected. Code appears well-optimized.")
-        push!(recommendations, "💡 Consider micro-optimizations: @inbounds, @simd, type annotations")
+        push!(
+            recommendations,
+            "✅ No major bottlenecks detected. Code appears well-optimized.",
+        )
+        push!(
+            recommendations,
+            "💡 Consider micro-optimizations: @inbounds, @simd, type annotations",
+        )
     end
 
     return recommendations
@@ -197,7 +216,7 @@ Get specific recommendations for a category.
 """
 function get_recommendations_for_category(category::String, percentage::Float64)
     recs = String[]
-    pct_str = round(percentage, digits=1)
+    pct_str = round(percentage, digits = 1)
 
     if category == "distance_calculation"
         push!(recs, "🔥 Distance calculations are a hotspot ($pct_str% of runtime)")
@@ -245,9 +264,17 @@ Analyze allocation sites and provide recommendations.
 # Returns
 - Vector of recommendation strings
 """
-function analyze_allocation_patterns(sites::Vector{AllocationSite};
-                                    package_patterns=["ATRIANeighbors", "tree.jl", "search.jl",
-                                                     "structures.jl", "metrics.jl", "pointsets.jl"])
+function analyze_allocation_patterns(
+    sites::Vector{AllocationSite};
+    package_patterns = [
+        "ATRIANeighbors",
+        "tree.jl",
+        "search.jl",
+        "structures.jl",
+        "metrics.jl",
+        "pointsets.jl",
+    ],
+)
     recommendations = String[]
 
     if isempty(sites)
@@ -266,15 +293,24 @@ function analyze_allocation_patterns(sites::Vector{AllocationSite};
         package_pct = 100.0 * package_bytes / total_bytes
 
         if package_pct > 50
-            push!(recommendations, "⚠️  Package code allocates $(round(package_pct, digits=1))% of total memory")
-            push!(recommendations, "   → Focus optimization on top package allocation sites")
+            push!(
+                recommendations,
+                "⚠️  Package code allocates $(round(package_pct, digits=1))% of total memory",
+            )
+            push!(
+                recommendations,
+                "   → Focus optimization on top package allocation sites",
+            )
         end
     end
 
     # Check for many small allocations
     avg_bytes = total_bytes / total_count
     if avg_bytes < 1000  # Less than 1KB average
-        push!(recommendations, "📦 Many small allocations detected (avg $(format_bytes(round(Int64, avg_bytes))))")
+        push!(
+            recommendations,
+            "📦 Many small allocations detected (avg $(format_bytes(round(Int64, avg_bytes))))",
+        )
         push!(recommendations, "   → Consider object pooling or pre-allocation strategies")
         push!(recommendations, "   → Look for allocations in hot inner loops")
     end
@@ -284,7 +320,10 @@ function analyze_allocation_patterns(sites::Vector{AllocationSite};
     if !isempty(large_sites)
         push!(recommendations, "💾 Large allocation sites detected:")
         for site in large_sites[1:min(3, length(large_sites))]
-            push!(recommendations, "   → $(site.func) @ $(basename(site.file)):$(site.line) - $(format_bytes(site.total_bytes))")
+            push!(
+                recommendations,
+                "   → $(site.func) @ $(basename(site.file)):$(site.line) - $(format_bytes(site.total_bytes))",
+            )
         end
     end
 
@@ -309,9 +348,11 @@ summary = quick_categorize(profile.entries, profile.total_samples)
 println(summary)  # "Main bottlenecks: Distance Calculation (23.5%), Search Operations (15.2%)"
 ```
 """
-function quick_categorize(entries::Vector{ProfileEntry},
-                         total_samples::Int;
-                         min_percentage=5.0)
+function quick_categorize(
+    entries::Vector{ProfileEntry},
+    total_samples::Int;
+    min_percentage = 5.0,
+)
     categorized = categorize_entries(entries)
 
     # Calculate percentages
@@ -332,7 +373,7 @@ function quick_categorize(entries::Vector{ProfileEntry},
     end
 
     # Sort by percentage
-    sort!(significant, by=x->x[2], rev=true)
+    sort!(significant, by = x->x[2], rev = true)
 
     # Format
     parts = ["$cat ($(round(pct, digits=1))%)" for (cat, pct) in significant]
@@ -346,7 +387,18 @@ More general categorization patterns suitable for any Julia code.
 """
 function general_categories()
     return Dict(
-        "linear_algebra" => ["mul!", "gemm", "gemv", "dot", "norm", "eigvals", "qr", "lu", "cholesky", "svd"],
+        "linear_algebra" => [
+            "mul!",
+            "gemm",
+            "gemv",
+            "dot",
+            "norm",
+            "eigvals",
+            "qr",
+            "lu",
+            "cholesky",
+            "svd",
+        ],
         "array_operations" => ["broadcast", "map", "reduce", "filter", "sort", "permute"],
         "memory_allocation" => ["alloc", "malloc", "new", "copy", "similar"],
         "io_operations" => ["read", "write", "print", "parse", "serialize"],
@@ -378,11 +430,14 @@ my_categories = Dict(
 categorized = categorize_with_custom(entries, my_categories)
 ```
 """
-function categorize_with_custom(entries::Vector{ProfileEntry},
-                               custom_categories::Dict{String, Vector{String}};
-                               use_defaults=true)
-    categories = use_defaults ? merge(default_categories(), custom_categories) : custom_categories
-    return categorize_entries(entries, categories=categories)
+function categorize_with_custom(
+    entries::Vector{ProfileEntry},
+    custom_categories::Dict{String,Vector{String}};
+    use_defaults = true,
+)
+    categories =
+        use_defaults ? merge(default_categories(), custom_categories) : custom_categories
+    return categorize_entries(entries, categories = categories)
 end
 
 """
@@ -397,9 +452,11 @@ Print categorized summary in a compact format.
 - `total_samples`: Total number of profile samples
 - `min_percentage`: Minimum percentage to display (default 3%)
 """
-function print_compact_categories(categorized::Dict{String, Vector{ProfileEntry}},
-                                 total_samples::Int;
-                                 min_percentage=3.0)
+function print_compact_categories(
+    categorized::Dict{String,Vector{ProfileEntry}},
+    total_samples::Int;
+    min_percentage = 3.0,
+)
     # Calculate and sort
     cat_summary = []
     for (cat, entries) in categorized
@@ -417,13 +474,14 @@ function print_compact_categories(categorized::Dict{String, Vector{ProfileEntry}
         return
     end
 
-    sort!(cat_summary, by=x->x[4], rev=true)
+    sort!(cat_summary, by = x->x[4], rev = true)
 
     println("Category breakdown:")
     for (cat, entries, samples, pct) in cat_summary
         cat_display = replace(cat, "_" => " ") |> titlecase
         top_entry = entries[1]
-        top_func = length(top_entry.func) > 30 ? top_entry.func[1:27] * "..." : top_entry.func
+        top_func =
+            length(top_entry.func) > 30 ? top_entry.func[1:27] * "..." : top_entry.func
         println(@sprintf("  %-25s %5.1f%% | Top: %s", cat_display, pct, top_func))
     end
 end

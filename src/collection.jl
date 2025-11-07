@@ -20,7 +20,7 @@ Collect profile data by running the provided workload function.
 # Returns
 - `ProfileData`: Structured profile data
 """
-function collect_profile_data(workload_fn::Function; metadata=Dict{String,Any}())
+function collect_profile_data(workload_fn::Function; metadata = Dict{String,Any}())
     # Clear previous profile data
     Profile.clear()
 
@@ -42,7 +42,7 @@ function collect_profile_data(workload_fn::Function; metadata=Dict{String,Any}()
     end
 
     # Count samples per function
-    function_counts = Dict{Tuple{String,String,Int}, Int}()
+    function_counts = Dict{Tuple{String,String,Int},Int}()
 
     for frame_idx in data
         if frame_idx > 0  # Valid frame
@@ -70,12 +70,12 @@ function collect_profile_data(workload_fn::Function; metadata=Dict{String,Any}()
     # Convert to ProfileEntry array
     total_samples = length(data)
     entries = [
-        ProfileEntry(func, file, line, count, 100.0 * count / total_samples)
-        for ((func, file, line), count) in function_counts
+        ProfileEntry(func, file, line, count, 100.0 * count / total_samples) for
+        ((func, file, line), count) in function_counts
     ]
 
     # Sort by sample count (descending)
-    sort!(entries, by=e -> e.samples, rev=true)
+    sort!(entries, by = e -> e.samples, rev = true)
 
     return ProfileData(now(), total_samples, entries, metadata)
 end
@@ -98,11 +98,10 @@ function save_profile(profile::ProfileData, filename::String)
                 "file" => e.file,
                 "line" => e.line,
                 "samples" => e.samples,
-                "percentage" => e.percentage
-            )
-            for e in profile.entries
+                "percentage" => e.percentage,
+            ) for e in profile.entries
         ],
-        "metadata" => profile.metadata
+        "metadata" => profile.metadata,
     )
 
     open(filename, "w") do io
@@ -123,14 +122,8 @@ function load_profile(filename::String)
     data = JSON.parse(read(filename, String))
 
     entries = [
-        ProfileEntry(
-            e["func"],
-            e["file"],
-            e["line"],
-            e["samples"],
-            e["percentage"]
-        )
-        for e in data["entries"]
+        ProfileEntry(e["func"], e["file"], e["line"], e["samples"], e["percentage"]) for
+        e in data["entries"]
     ]
 
     # Metadata is already a Dict{String,Any} from JSON.parse
@@ -140,6 +133,6 @@ function load_profile(filename::String)
         DateTime(data["timestamp"]),
         data["total_samples"],
         entries,
-        metadata
+        metadata,
     )
 end

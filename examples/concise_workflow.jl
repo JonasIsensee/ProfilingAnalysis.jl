@@ -25,7 +25,7 @@ println("-" ^ 80)
 println()
 
 profile = collect_profile_data() do
-    run_demo_workload(duration_seconds=2.0)
+    run_demo_workload(duration_seconds = 2.0)
 end
 
 # This single call gives you everything you need!
@@ -44,7 +44,7 @@ println()
 
 # One-line summary
 println("📝 TL;DR:")
-println(tldr_summary(profile, filter_fn=e -> !is_system_code(e)))
+println(tldr_summary(profile, filter_fn = e -> !is_system_code(e)))
 println()
 
 # One-line category breakdown
@@ -55,7 +55,7 @@ println()
 
 # Compact top 5
 println("🔥 Top 5:")
-compact_hotspots(user_entries, max_display=5)
+compact_hotspots(user_entries, max_display = 5)
 println()
 
 println()
@@ -71,7 +71,7 @@ println()
 
 # Start with quick summary
 println("Step 1: Quick summary")
-quick_summary(profile, top_n=3, filter_fn=e -> !is_system_code(e))
+quick_summary(profile, top_n = 3, filter_fn = e -> !is_system_code(e))
 println()
 
 # Drill into specific file
@@ -79,7 +79,7 @@ println("Step 2: Focus on a specific file")
 workload_entries = query_by_file(profile, "demo_workload.jl")
 if !isempty(workload_entries)
     println("Hotspots in demo_workload.jl:")
-    compact_hotspots(workload_entries, max_display=5)
+    compact_hotspots(workload_entries, max_display = 5)
 end
 println()
 
@@ -109,10 +109,9 @@ compact_hotspots(major)
 println()
 
 # Custom filter - complex conditions
-critical = query_by_filter(profile, e ->
-    e.percentage > 2.0 &&
-    !is_system_code(e) &&
-    contains(e.file, ".jl")
+critical = query_by_filter(
+    profile,
+    e -> e.percentage > 2.0 && !is_system_code(e) && contains(e.file, ".jl"),
 )
 println("Critical user code hotspots (>2%):")
 compact_hotspots(critical)
@@ -134,11 +133,11 @@ custom_cats = Dict(
     "matrix_ops" => ["matrix", "gemm", "mul"],
     "linear_solve" => ["solve", "factorization", "lu", "qr"],
     "eigenvalue" => ["eigen", "eig"],
-    "vector_ops" => ["vector", "dot", "norm"]
+    "vector_ops" => ["vector", "dot", "norm"],
 )
 
 categorized = categorize_with_custom(user_entries, custom_cats)
-print_compact_categories(categorized, profile.total_samples, min_percentage=2.0)
+print_compact_categories(categorized, profile.total_samples, min_percentage = 2.0)
 println()
 
 println()
@@ -153,13 +152,13 @@ println("-" ^ 80)
 println()
 
 println("Collecting allocation profile (10% sampling)...")
-allocs = collect_allocation_profile(sample_rate=0.1) do
+allocs = collect_allocation_profile(sample_rate = 0.1) do
     matrix_multiply(50, 10)
     solve_linear_system(50, 5)
 end
 
 println()
-summarize_allocations(allocs, top_n=8)
+summarize_allocations(allocs, top_n = 8)
 println()
 
 # Get recommendations

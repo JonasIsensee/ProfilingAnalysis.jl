@@ -11,24 +11,39 @@ using Printf
 
 Print entries in a formatted table.
 """
-function print_entry_table(entries::Vector{ProfileEntry}; max_width=120)
+function print_entry_table(entries::Vector{ProfileEntry}; max_width = 120)
     if isempty(entries)
         println("No entries found.")
         return
     end
 
-    println(@sprintf("%-5s %-10s %-8s %-s", "Rank", "Samples", "% Total", "Function @ File:Line"))
+    println(
+        @sprintf(
+            "%-5s %-10s %-8s %-s",
+            "Rank",
+            "Samples",
+            "% Total",
+            "Function @ File:Line"
+        )
+    )
     println("-" ^ max_width)
 
     for (idx, entry) in enumerate(entries)
         # Format location
         location = "$(entry.func) @ $(entry.file):$(entry.line)"
         if length(location) > max_width - 30
-            location = location[1:max_width-33] * "..."
+            location = location[1:(max_width-33)] * "..."
         end
 
-        println(@sprintf("%-5d %-10d %-8.2f %s",
-            idx, entry.samples, entry.percentage, location))
+        println(
+            @sprintf(
+                "%-5d %-10d %-8.2f %s",
+                idx,
+                entry.samples,
+                entry.percentage,
+                location
+            )
+        )
     end
 end
 
@@ -46,10 +61,12 @@ Generate a summary of profile data.
 - `top_n`: Number of top entries to show
 - `title`: Title for the summary section
 """
-function summarize_profile(profile::ProfileData;
-                           filter_fn=nothing,
-                           top_n=20,
-                           title="Profile Summary")
+function summarize_profile(
+    profile::ProfileData;
+    filter_fn = nothing,
+    top_n = 20,
+    title = "Profile Summary",
+)
     println("=" ^ 80)
     println(title)
     println("=" ^ 80)
@@ -64,7 +81,9 @@ function summarize_profile(profile::ProfileData;
         entries = filter(filter_fn, entries)
         total_filtered = sum(e.samples for e in entries)
         pct_filtered = 100.0 * total_filtered / profile.total_samples
-        println("Filtered samples: $total_filtered / $(profile.total_samples) ($(round(pct_filtered, digits=2))%)")
+        println(
+            "Filtered samples: $total_filtered / $(profile.total_samples) ($(round(pct_filtered, digits=2))%)",
+        )
         println()
     end
 
@@ -110,8 +129,10 @@ patterns = Dict(
 generate_recommendations(entries, patterns)
 ```
 """
-function generate_recommendations(entries::Vector{ProfileEntry},
-                                  patterns::Dict{String, T} where T)
+function generate_recommendations(
+    entries::Vector{ProfileEntry},
+    patterns::Dict{String,T} where {T},
+)
     println("=" ^ 80)
     println("Performance Recommendations")
     println("=" ^ 80)
@@ -120,11 +141,14 @@ function generate_recommendations(entries::Vector{ProfileEntry},
     for (category, config) in patterns
         # Check if any entries match the patterns
         pattern_list = config[:patterns]
-        has_match = any(entry ->
-            any(p -> contains(lowercase(entry.func), lowercase(p)) ||
+        has_match = any(
+            entry -> any(
+                p ->
+                    contains(lowercase(entry.func), lowercase(p)) ||
                     contains(lowercase(entry.file), lowercase(p)),
-                pattern_list),
-            entries
+                pattern_list,
+            ),
+            entries,
         )
 
         if has_match
@@ -154,7 +178,7 @@ profile = collect_profile_data(() -> my_function())
 quick_summary(profile, filter_fn=e -> !is_system_code(e))
 ```
 """
-function quick_summary(profile::ProfileData; top_n=5, filter_fn=nothing)
+function quick_summary(profile::ProfileData; top_n = 5, filter_fn = nothing)
     # Apply filter if provided
     entries = filter_fn === nothing ? profile.entries : filter(filter_fn, profile.entries)
 
@@ -167,11 +191,13 @@ function quick_summary(profile::ProfileData; top_n=5, filter_fn=nothing)
 
     println("📊 PROFILE QUICK SUMMARY")
     println()
-    println("Total samples: $(profile.total_samples) | Unique locations: $(length(entries))")
+    println(
+        "Total samples: $(profile.total_samples) | Unique locations: $(length(entries))",
+    )
 
     if filter_fn !== nothing
         filtered_samples = sum(e.samples for e in entries)
-        filtered_pct = round(100.0 * filtered_samples / profile.total_samples, digits=1)
+        filtered_pct = round(100.0 * filtered_samples / profile.total_samples, digits = 1)
         println("Showing: $filtered_samples samples ($filtered_pct% of total)")
     end
 
@@ -181,8 +207,16 @@ function quick_summary(profile::ProfileData; top_n=5, filter_fn=nothing)
     for (i, entry) in enumerate(entries[1:display_count])
         file_short = basename(entry.file)
         func_short = length(entry.func) > 40 ? entry.func[1:37] * "..." : entry.func
-        println(@sprintf("  %d. %5.1f%% | %s @ %s:%d",
-            i, entry.percentage, func_short, file_short, entry.line))
+        println(
+            @sprintf(
+                "  %d. %5.1f%% | %s @ %s:%d",
+                i,
+                entry.percentage,
+                func_short,
+                file_short,
+                entry.line
+            )
+        )
     end
 
     println()
@@ -209,7 +243,7 @@ summary_text = tldr_summary(profile, filter_fn=e -> !is_system_code(e))
 println(summary_text)
 ```
 """
-function tldr_summary(profile::ProfileData; filter_fn=nothing)
+function tldr_summary(profile::ProfileData; filter_fn = nothing)
     entries = filter_fn === nothing ? profile.entries : filter(filter_fn, profile.entries)
 
     if isempty(entries)
@@ -221,14 +255,20 @@ function tldr_summary(profile::ProfileData; filter_fn=nothing)
 
     # Build summary
     parts = String[]
-    push!(parts, "Profile has $(profile.total_samples) samples across $(length(entries)) locations.")
+    push!(
+        parts,
+        "Profile has $(profile.total_samples) samples across $(length(entries)) locations.",
+    )
 
     top_pct = sum(e.percentage for e in top_3)
     push!(parts, "Top $(length(top_3)) hotspots account for $(round(top_pct, digits=1))%:")
 
     for (i, entry) in enumerate(top_3)
         file_short = basename(entry.file)
-        push!(parts, "$i) $(entry.func) ($(round(entry.percentage, digits=1))%) @ $file_short:$(entry.line)")
+        push!(
+            parts,
+            "$i) $(entry.func) ($(round(entry.percentage, digits=1))%) @ $file_short:$(entry.line)",
+        )
     end
 
     return join(parts, " ")
@@ -245,7 +285,7 @@ top_entries = query_top_n(profile, 10)
 compact_hotspots(top_entries)
 ```
 """
-function compact_hotspots(entries::Vector{ProfileEntry}; max_display=10)
+function compact_hotspots(entries::Vector{ProfileEntry}; max_display = 10)
     if isempty(entries)
         println("No entries to display.")
         return
@@ -255,10 +295,16 @@ function compact_hotspots(entries::Vector{ProfileEntry}; max_display=10)
 
     for (i, entry) in enumerate(entries[1:display_count])
         file_short = basename(entry.file)
-        println(@sprintf("%2d. %5.1f%% %-40s %s:%d",
-            i, entry.percentage,
-            length(entry.func) > 40 ? entry.func[1:37] * "..." : entry.func,
-            file_short, entry.line))
+        println(
+            @sprintf(
+                "%2d. %5.1f%% %-40s %s:%d",
+                i,
+                entry.percentage,
+                length(entry.func) > 40 ? entry.func[1:37] * "..." : entry.func,
+                file_short,
+                entry.line
+            )
+        )
     end
 end
 
@@ -283,11 +329,13 @@ profile = collect_profile_data(() -> my_function())
 analyze_profile_concise(profile)
 ```
 """
-function analyze_profile_concise(profile::ProfileData;
-                                filter_fn=e -> !is_system_code(e),
-                                top_n=5,
-                                show_categories=true,
-                                show_recommendations=true)
+function analyze_profile_concise(
+    profile::ProfileData;
+    filter_fn = e -> !is_system_code(e),
+    top_n = 5,
+    show_categories = true,
+    show_recommendations = true,
+)
     println("=" ^ 70)
     println("CONCISE PROFILE ANALYSIS")
     println("=" ^ 70)
@@ -295,7 +343,7 @@ function analyze_profile_concise(profile::ProfileData;
 
     # TL;DR
     println("📝 Summary:")
-    println(tldr_summary(profile, filter_fn=filter_fn))
+    println(tldr_summary(profile, filter_fn = filter_fn))
     println()
 
     # Top hotspots
@@ -303,12 +351,12 @@ function analyze_profile_concise(profile::ProfileData;
     display_count = min(top_n, length(entries))
 
     println("🔥 Top $display_count Hotspots:")
-    compact_hotspots(entries, max_display=display_count)
+    compact_hotspots(entries, max_display = display_count)
     println()
 
     # Categories
     if show_categories
-        cat_summary = quick_categorize(entries, profile.total_samples, min_percentage=3.0)
+        cat_summary = quick_categorize(entries, profile.total_samples, min_percentage = 3.0)
         println("🏷️  $cat_summary")
         println()
     end

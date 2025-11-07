@@ -32,9 +32,9 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
 
         # Collect profile data
         profile = collect_profile_data(
-            metadata=Dict("test" => "collection", "version" => "1.0")
+            metadata = Dict("test" => "collection", "version" => "1.0"),
         ) do
-            run_demo_workload(duration_seconds=2.0)
+            run_demo_workload(duration_seconds = 2.0)
         end
 
         @test profile isa ProfileData
@@ -43,15 +43,17 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         @test haskey(profile.metadata, "test")
         @test profile.metadata["test"] == "collection"
 
-        println("✓ Profile collected: $(profile.total_samples) samples, $(length(profile.entries)) locations")
+        println(
+            "✓ Profile collected: $(profile.total_samples) samples, $(length(profile.entries)) locations",
+        )
     end
 
     @testset "Save and Load" begin
         println("\n=== Testing Save and Load ===")
 
         # Create a profile
-        profile = collect_profile_data(metadata=Dict("test" => "save_load")) do
-            run_demo_workload(duration_seconds=1.0)
+        profile = collect_profile_data(metadata = Dict("test" => "save_load")) do
+            run_demo_workload(duration_seconds = 1.0)
         end
 
         # Save profile
@@ -73,7 +75,7 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
 
         # Create a profile for testing
         profile = collect_profile_data() do
-            run_demo_workload(duration_seconds=2.0)
+            run_demo_workload(duration_seconds = 2.0)
         end
 
         # Test query_top_n
@@ -86,7 +88,7 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         println("✓ query_top_n: $(length(top_10)) entries")
 
         # Test query_top_n with filter
-        non_system = query_top_n(profile, 10, filter_fn=e -> !is_system_code(e))
+        non_system = query_top_n(profile, 10, filter_fn = e -> !is_system_code(e))
         @test all(e -> !is_system_code(e), non_system)
         println("✓ query_top_n with filter: $(length(non_system)) entries")
 
@@ -102,20 +104,28 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
 
         # Test query_by_pattern
         pattern_entries = query_by_pattern(profile, "matrix")
-        @test all(e -> contains(e.func, "matrix") || contains(e.file, "matrix"), pattern_entries)
+        @test all(
+            e -> contains(e.func, "matrix") || contains(e.file, "matrix"),
+            pattern_entries,
+        )
         println("✓ query_by_pattern: $(length(pattern_entries)) entries")
 
         # Test query_by_filter
         high_sample_entries = query_by_filter(profile, e -> e.samples > 10)
         @test all(e -> e.samples > 10, high_sample_entries)
-        println("✓ query_by_filter: $(length(high_sample_entries)) entries with >10 samples")
+        println(
+            "✓ query_by_filter: $(length(high_sample_entries)) entries with >10 samples",
+        )
 
         # Test is_system_code
         if length(profile.entries) > 0
             system_entries = filter(is_system_code, profile.entries)
             non_system_entries = filter(e -> !is_system_code(e), profile.entries)
-            @test length(system_entries) + length(non_system_entries) == length(profile.entries)
-            println("✓ is_system_code: $(length(system_entries)) system, $(length(non_system_entries)) non-system")
+            @test length(system_entries) + length(non_system_entries) ==
+                  length(profile.entries)
+            println(
+                "✓ is_system_code: $(length(system_entries)) system, $(length(non_system_entries)) non-system",
+            )
         end
     end
 
@@ -124,7 +134,7 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
 
         # Collect profile with known workload
         profile = collect_profile_data() do
-            run_demo_workload(duration_seconds=3.0)
+            run_demo_workload(duration_seconds = 3.0)
         end
 
         # Get non-system code only
@@ -135,13 +145,16 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         top_user_code = user_code[1:min(15, length(user_code))]
 
         # Count how many entries are from demo_workload.jl
-        demo_workload_entries = filter(e -> contains(e.file, "demo_workload"), top_user_code)
+        demo_workload_entries =
+            filter(e -> contains(e.file, "demo_workload"), top_user_code)
 
         println("Top 15 user code functions:")
         for (i, entry) in enumerate(top_user_code)
             marker = contains(entry.file, "demo_workload") ? " ✓" : ""
             println("  $i. $(entry.func)$marker")
-            println("      $(entry.samples) samples ($(round(entry.percentage, digits=2))%)")
+            println(
+                "      $(entry.samples) samples ($(round(entry.percentage, digits=2))%)",
+            )
         end
         println()
         println("Found $(length(demo_workload_entries)) demo_workload functions in top 15")
@@ -149,13 +162,17 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         # Fuzzy test: At least 1 of our demo functions should be in top 15
         # (This is very lenient, but profile timing is unpredictable)
         @test length(demo_workload_entries) >= 1
-        println("✓ Fuzzy hotspot test passed: $(length(demo_workload_entries)) demo_workload functions in top 15")
+        println(
+            "✓ Fuzzy hotspot test passed: $(length(demo_workload_entries)) demo_workload functions in top 15",
+        )
 
         # Test that top functions account for significant percentage
         if length(top_user_code) >= 5
             top_5_percentage = sum(e.percentage for e in top_user_code[1:5])
             @test top_5_percentage > 5.0
-            println("✓ Top 5 functions account for $(round(top_5_percentage, digits=2))% of time")
+            println(
+                "✓ Top 5 functions account for $(round(top_5_percentage, digits=2))% of time",
+            )
         end
     end
 
@@ -163,7 +180,7 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         println("\n=== Testing Summary Functions ===")
 
         profile = collect_profile_data() do
-            run_demo_workload(duration_seconds=1.5)
+            run_demo_workload(duration_seconds = 1.5)
         end
 
         # Test print_entry_table (just verify it doesn't error)
@@ -171,7 +188,7 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         println("✓ print_entry_table works")
 
         # Test summarize_profile
-        @test_nowarn summarize_profile(profile, top_n=10, title="Test Summary")
+        @test_nowarn summarize_profile(profile, top_n = 10, title = "Test Summary")
         println("✓ summarize_profile works")
 
         # Test generate_recommendations
@@ -180,9 +197,9 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
                 patterns = ["matrix", "eigen", "qr", "solve"],
                 recommendations = [
                     "Use BLAS for large matrices",
-                    "Consider parallel algorithms"
-                ]
-            )
+                    "Consider parallel algorithms",
+                ],
+            ),
         )
         @test_nowarn generate_recommendations(profile.entries, patterns)
         println("✓ generate_recommendations works")
@@ -192,12 +209,12 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         println("\n=== Testing Comparison Functions ===")
 
         # Create two different profiles
-        profile1 = collect_profile_data(metadata=Dict("version" => "1")) do
-            run_demo_workload(duration_seconds=1.0)
+        profile1 = collect_profile_data(metadata = Dict("version" => "1")) do
+            run_demo_workload(duration_seconds = 1.0)
         end
 
-        profile2 = collect_profile_data(metadata=Dict("version" => "2")) do
-            run_demo_workload(duration_seconds=1.0)
+        profile2 = collect_profile_data(metadata = Dict("version" => "2")) do
+            run_demo_workload(duration_seconds = 1.0)
         end
 
         # Save them
@@ -208,7 +225,7 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         p1 = load_profile(TEST_PROFILE_1)
         p2 = load_profile(TEST_PROFILE_2)
 
-        @test_nowarn compare_profiles(p1, p2, top_n=10)
+        @test_nowarn compare_profiles(p1, p2, top_n = 10)
         println("✓ compare_profiles works")
     end
 
@@ -217,7 +234,7 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
 
         # Create a test profile
         profile = collect_profile_data() do
-            run_demo_workload(duration_seconds=1.0)
+            run_demo_workload(duration_seconds = 1.0)
         end
         save_profile(profile, TEST_PROFILE_1)
 
@@ -243,15 +260,17 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
         println("\n=== Testing Allocation Profiling ===")
 
         # Test collect_allocation_profile
-        allocs = collect_allocation_profile(sample_rate=0.1, warmup=true) do
-            run_demo_workload(duration_seconds=1.0)
+        allocs = collect_allocation_profile(sample_rate = 0.1, warmup = true) do
+            run_demo_workload(duration_seconds = 1.0)
         end
 
         @test allocs isa AllocationProfile
         @test allocs.total_allocations >= 0
         @test allocs.total_bytes >= 0
         @test allocs.sites isa Vector{AllocationSite}
-        println("✓ collect_allocation_profile: $(allocs.total_allocations) allocations, $(format_bytes(allocs.total_bytes))")
+        println(
+            "✓ collect_allocation_profile: $(allocs.total_allocations) allocations, $(format_bytes(allocs.total_bytes))",
+        )
 
         # Test format_bytes utility
         @test format_bytes(500) == "500B"
@@ -262,12 +281,18 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
 
         # Test print_allocation_table (should not error)
         if !isempty(allocs.sites)
-            @test_nowarn print_allocation_table(allocs.sites[1:min(5, length(allocs.sites))])
+            @test_nowarn print_allocation_table(
+                allocs.sites[1:min(5, length(allocs.sites))],
+            )
             println("✓ print_allocation_table works")
         end
 
         # Test summarize_allocations
-        @test_nowarn summarize_allocations(allocs, top_n=10, title="Test Allocation Summary")
+        @test_nowarn summarize_allocations(
+            allocs,
+            top_n = 10,
+            title = "Test Allocation Summary",
+        )
         println("✓ summarize_allocations works")
 
         # Test analyze_allocation_patterns
@@ -275,7 +300,9 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
             recommendations = analyze_allocation_patterns(allocs.sites)
             @test recommendations isa Vector{String}
             @test length(recommendations) > 0
-            println("✓ analyze_allocation_patterns: $(length(recommendations)) recommendations")
+            println(
+                "✓ analyze_allocation_patterns: $(length(recommendations)) recommendations",
+            )
         end
 
         # Test empty allocation profile
@@ -289,12 +316,12 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
 
         # Create a profile for testing
         profile = collect_profile_data() do
-            run_demo_workload(duration_seconds=1.5)
+            run_demo_workload(duration_seconds = 1.5)
         end
 
         # Test default_categories
         categories = default_categories()
-        @test categories isa Dict{String, Vector{String}}
+        @test categories isa Dict{String,Vector{String}}
         @test haskey(categories, "distance_calculation")
         @test haskey(categories, "heap_operations")
         @test haskey(categories, "search_operations")
@@ -302,32 +329,39 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
 
         # Test categorize_entries
         categorized = categorize_entries(profile.entries)
-        @test categorized isa Dict{String, Vector{ProfileEntry}}
+        @test categorized isa Dict{String,Vector{ProfileEntry}}
         @test haskey(categorized, "other")
         total_categorized = sum(length(v) for v in values(categorized))
         @test total_categorized == length(profile.entries)
         println("✓ categorize_entries: $(length(profile.entries)) entries categorized")
 
         # Test print_categorized_summary
-        @test_nowarn print_categorized_summary(categorized, profile.total_samples, min_percentage=1.0)
+        @test_nowarn print_categorized_summary(
+            categorized,
+            profile.total_samples,
+            min_percentage = 1.0,
+        )
         println("✓ print_categorized_summary works")
 
         # Test generate_smart_recommendations
         recommendations = generate_smart_recommendations(categorized, profile.total_samples)
         @test recommendations isa Vector{String}
         @test length(recommendations) > 0
-        println("✓ generate_smart_recommendations: $(length(recommendations)) recommendations")
+        println(
+            "✓ generate_smart_recommendations: $(length(recommendations)) recommendations",
+        )
 
         # Test with custom categories
         custom_categories = Dict("matrix_ops" => ["matrix", "eigen", "qr"])
-        custom_categorized = categorize_entries(profile.entries, categories=custom_categories)
+        custom_categorized =
+            categorize_entries(profile.entries, categories = custom_categories)
         @test haskey(custom_categorized, "matrix_ops")
         @test haskey(custom_categorized, "other")
         println("✓ categorize_entries with custom categories works")
 
         # Test empty entries
         empty_categorized = categorize_entries(ProfileEntry[])
-        @test empty_categorized isa Dict{String, Vector{ProfileEntry}}
+        @test empty_categorized isa Dict{String,Vector{ProfileEntry}}
         println("✓ Handle empty entries in categorization")
     end
 
@@ -376,7 +410,7 @@ end
 
 # Cleanup
 println("\n=== Cleaning up test files ===")
-rm(TEST_DIR, recursive=true, force=true)
+rm(TEST_DIR, recursive = true, force = true)
 println("✓ Test cleanup complete")
 
 println("\n" * "="^80)

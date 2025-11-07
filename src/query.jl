@@ -17,7 +17,7 @@ Get top N hotspots.
 # Returns
 - Vector of top N ProfileEntry objects
 """
-function query_top_n(profile::ProfileData, n::Int; filter_fn=nothing)
+function query_top_n(profile::ProfileData, n::Int; filter_fn = nothing)
     entries = profile.entries
 
     if filter_fn !== nothing
@@ -51,7 +51,10 @@ end
 Get all entries where function OR file matches pattern.
 """
 function query_by_pattern(profile::ProfileData, pattern::String)
-    return filter(e -> contains(e.func, pattern) || contains(e.file, pattern), profile.entries)
+    return filter(
+        e -> contains(e.func, pattern) || contains(e.file, pattern),
+        profile.entries,
+    )
 end
 
 """
@@ -86,8 +89,7 @@ user_entries = filter(e -> !is_system_code(e), profile.entries)
 is_system_code(entry, system_patterns=["MyInternalLib", "libc"])
 ```
 """
-function is_system_code(entry::ProfileEntry;
-                        system_patterns=default_system_patterns())
+function is_system_code(entry::ProfileEntry; system_patterns = default_system_patterns())
     return any(contains(entry.file, p) || contains(entry.func, p) for p in system_patterns)
 end
 
@@ -99,22 +101,37 @@ Return default patterns for identifying system/library code.
 function default_system_patterns()
     return [
         # Julia internals
-        "libc", "libopenlibm", "jl_", "julia-release",
-        "/Base.jl", "/client.jl", "/loading.jl", "/boot.jl",
-        "/compiler/", "/reflection.jl",
+        "libc",
+        "libopenlibm",
+        "jl_",
+        "julia-release",
+        "/Base.jl",
+        "/client.jl",
+        "/loading.jl",
+        "/boot.jl",
+        "/compiler/",
+        "/reflection.jl",
 
         # Build artifacts
-        "/cache/build/", "/workspace/srcdir/",
+        "/cache/build/",
+        "/workspace/srcdir/",
 
         # System libraries
-        "glibc", "libm.so", "libpthread",
+        "glibc",
+        "libm.so",
+        "libpthread",
 
         # Common bloat patterns
-        "inference.jl", "essentials.jl", "promotion.jl",
-        "abstractarray.jl", "broadcast.jl", "reducedim.jl",
+        "inference.jl",
+        "essentials.jl",
+        "promotion.jl",
+        "abstractarray.jl",
+        "broadcast.jl",
+        "reducedim.jl",
 
         # LLVM/compiler
-        "llvm", "codegen",
+        "llvm",
+        "codegen",
     ]
 end
 
@@ -126,10 +143,18 @@ More aggressive than is_system_code - filters out common stdlib modules.
 """
 function is_likely_stdlib(entry::ProfileEntry)
     stdlib_patterns = [
-        "/LinearAlgebra/", "/Statistics/", "/Random/",
-        "/SparseArrays/", "/Distributed/", "/Profile/",
-        "/REPL/", "/Pkg/", "/Test/", "/Dates/",
-        "stdlib/", "share/julia/stdlib",
+        "/LinearAlgebra/",
+        "/Statistics/",
+        "/Random/",
+        "/SparseArrays/",
+        "/Distributed/",
+        "/Profile/",
+        "/REPL/",
+        "/Pkg/",
+        "/Test/",
+        "/Dates/",
+        "stdlib/",
+        "share/julia/stdlib",
     ]
     return is_system_code(entry) || any(contains(entry.file, p) for p in stdlib_patterns)
 end
@@ -143,7 +168,7 @@ Check if entry is likely noise (very low sample count or system code).
 - `entry`: Profile entry to check
 - `min_percentage`: Minimum percentage threshold (default 0.5%)
 """
-function is_noise(entry::ProfileEntry; min_percentage=0.5)
+function is_noise(entry::ProfileEntry; min_percentage = 0.5)
     return entry.percentage < min_percentage || is_system_code(entry)
 end
 
@@ -166,7 +191,7 @@ user_hotspots = filter_user_code(profile.entries)
 pure_user = filter_user_code(profile.entries, exclude_stdlib=true)
 ```
 """
-function filter_user_code(entries::Vector{ProfileEntry}; exclude_stdlib=false)
+function filter_user_code(entries::Vector{ProfileEntry}; exclude_stdlib = false)
     if exclude_stdlib
         return filter(e -> !is_likely_stdlib(e), entries)
     else

@@ -23,7 +23,7 @@ Note: For detailed analysis, use `@code_warntype` directly in the REPL.
 function check_type_stability_simple(f::Function, types::Tuple)
     # Capture @code_warntype output
     io = IOBuffer()
-    InteractiveUtils.code_warntype(io, f, types; optimize=false)
+    InteractiveUtils.code_warntype(io, f, types; optimize = false)
     output = String(take!(io))
 
     # Check for common instability indicators

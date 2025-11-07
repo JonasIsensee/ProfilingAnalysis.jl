@@ -15,7 +15,7 @@ This should show up as a hotspot in profiling.
 """
 function matrix_multiply(N::Int, iterations::Int)
     result = 0.0
-    for _ in 1:iterations
+    for _ = 1:iterations
         A = rand(N, N)
         B = rand(N, N)
         C = A * B
@@ -32,7 +32,7 @@ This should be another identifiable hotspot.
 """
 function solve_linear_system(N::Int, iterations::Int)
     result = 0.0
-    for _ in 1:iterations
+    for _ = 1:iterations
         A = rand(N, N) + I
         b = rand(N)
         x = A \ b
@@ -49,7 +49,7 @@ This is typically an expensive operation.
 """
 function compute_eigenvalues(N::Int, iterations::Int)
     result = 0.0
-    for _ in 1:iterations
+    for _ = 1:iterations
         A = rand(N, N)
         A = (A + A') / 2  # Make symmetric
         λ = eigvals(A)
@@ -65,7 +65,7 @@ Perform QR decomposition multiple times.
 """
 function qr_decomposition(N::Int, iterations::Int)
     result = 0.0
-    for _ in 1:iterations
+    for _ = 1:iterations
         A = rand(N, N)
         F = qr(A)
         # Extract Q and R matrices and compute sums
@@ -81,7 +81,7 @@ Basic vector operations - this should be relatively fast.
 """
 function vector_operations(N::Int, iterations::Int)
     result = 0.0
-    for _ in 1:iterations
+    for _ = 1:iterations
         v = rand(N)
         w = rand(N)
         result += dot(v, w) + norm(v) + norm(w)
@@ -102,7 +102,7 @@ This workload is designed to:
 Returns a tuple of (matrix_multiply_result, linear_system_result, eigenvalue_result,
                     qr_result, vector_result)
 """
-function run_demo_workload(; duration_seconds=3.0)
+function run_demo_workload(; duration_seconds = 3.0)
     # Warm up to estimate timing
     matrix_multiply(10, 1)
 

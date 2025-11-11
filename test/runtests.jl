@@ -10,6 +10,7 @@ This suite tests:
 - Summary and comparison functions
 - CLI interface
 - Fuzzy tests for top hotspots
+- Advanced analysis features (JET.jl and SnoopCompile.jl integrations)
 """
 
 using Test
@@ -407,6 +408,9 @@ const TEST_PROFILE_2 = joinpath(TEST_DIR, "test_profile_2.json")
     end
 
 end
+
+# Include advanced analysis tests (JET and SnoopCompile integrations)
+include("test_advanced_analysis.jl")
 
 # Cleanup
 println("\n=== Cleaning up test files ===")

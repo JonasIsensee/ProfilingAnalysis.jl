@@ -10,10 +10,14 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
+SnoopCompile = "aa65fe97-06da-5843-b5b1-d5d13cad87d2"
 
 [compat]
 julia = "1.10"
 JSON = "1.2"
+JET = "0.9"
+SnoopCompile = "2, 3"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

@@ -136,3 +136,122 @@ function load_profile(filename::String)
         metadata,
     )
 end
+
+"""
+    benchmark_optimization(name::String, workload_fn::Function;
+                          save_dir="benchmarks",
+                          metadata=Dict{String,Any}())
+
+Collect and save a profile with automatic naming for benchmark tracking.
+
+# Arguments
+- `name`: Name for this benchmark (e.g., "baseline", "optimized_v1")
+- `workload_fn`: Function to profile
+- `save_dir`: Directory to save benchmark profiles (default: "benchmarks")
+- `metadata`: Optional metadata to include
+
+# Returns
+- `ProfileData`: The collected profile
+
+# Example
+```julia
+# Collect baseline
+benchmark_optimization("baseline") do
+    my_function()
+end
+
+# After changes
+benchmark_optimization("optimized") do
+    my_function()
+end
+
+# Compare
+compare_benchmark_results("baseline", "optimized")
+```
+"""
+function benchmark_optimization(
+    name::String,
+    workload_fn::Function;
+    save_dir = "benchmarks",
+    metadata = Dict{String,Any}(),
+)
+    # Add benchmark info to metadata
+    bench_metadata = merge(metadata, Dict("benchmark_name" => name, "benchmark_dir" => save_dir))
+
+    # Collect profile
+    println("\n=== Benchmarking: $name ===")
+    profile = collect_profile_data(workload_fn, metadata = bench_metadata)
+
+    # Save with timestamp
+    mkpath(save_dir)
+    filename = joinpath(save_dir, "$(name).json")
+    save_profile(profile, filename)
+
+    return profile
+end
+
+"""
+    compare_benchmark_results(name1::String, name2::String;
+                             save_dir="benchmarks",
+                             top_n=20)
+
+Compare two benchmark profiles by name.
+
+# Arguments
+- `name1`: First benchmark name (baseline)
+- `name2`: Second benchmark name (comparison)
+- `save_dir`: Directory where benchmarks are saved (default: "benchmarks")
+- `top_n`: Number of top changes to display (default: 20)
+
+# Example
+```julia
+# After running benchmark_optimization("baseline") and benchmark_optimization("optimized")
+compare_benchmark_results("baseline", "optimized")
+```
+"""
+function compare_benchmark_results(
+    name1::String,
+    name2::String;
+    save_dir = "benchmarks",
+    top_n = 20,
+)
+    file1 = joinpath(save_dir, "$(name1).json")
+    file2 = joinpath(save_dir, "$(name2).json")
+
+    if !isfile(file1)
+        error("Benchmark not found: $file1")
+    end
+    if !isfile(file2)
+        error("Benchmark not found: $file2")
+    end
+
+    profile1 = load_profile(file1)
+    profile2 = load_profile(file2)
+
+    println("\n=== Comparing Benchmarks: $name1 vs $name2 ===\n")
+    compare_profiles(profile1, profile2, top_n = top_n)
+end
+
+"""
+    list_benchmarks(save_dir="benchmarks") -> Vector{String}
+
+List all available benchmarks in the specified directory.
+
+# Returns
+- Vector of benchmark names (without .json extension)
+
+# Example
+```julia
+benchmarks = list_benchmarks()
+println("Available benchmarks: ", join(benchmarks, ", "))
+```
+"""
+function list_benchmarks(save_dir = "benchmarks")
+    if !isdir(save_dir)
+        return String[]
+    end
+
+    files = readdir(save_dir)
+    json_files = filter(f -> endswith(f, ".json"), files)
+    return [replace(f, ".json" => "") for f in json_files]
+end

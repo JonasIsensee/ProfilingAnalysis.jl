@@ -214,3 +214,137 @@ major_hotspots = filter_by_threshold(profile.entries, 5.0)
 function filter_by_threshold(entries::Vector{ProfileEntry}, min_percentage::Float64)
     return filter(e -> e.percentage >= min_percentage, entries)
 end
+
+"""
+    query_by_regex(profile::ProfileData, pattern::Regex; field=:func) -> Vector{ProfileEntry}
+
+Query entries using regular expression matching.
+
+# Arguments
+- `profile`: Profile data to query
+- `pattern`: Regular expression pattern
+- `field`: Which field to match against (`:func`, `:file`, or `:both`)
+
+# Examples
+```julia
+# Match functions starting with "compute_"
+results = query_by_regex(profile, r"^compute_")
+
+# Match files ending with "_impl.jl"
+results = query_by_regex(profile, r"_impl\\.jl\$", field=:file)
+
+# Case-insensitive matching
+results = query_by_regex(profile, r"matrix"i)
+
+# Match both function and file
+results = query_by_regex(profile, r"optimization", field=:both)
+```
+"""
+function query_by_regex(profile::ProfileData, pattern::Regex; field = :func)
+    return filter(profile.entries) do e
+        if field == :func
+            occursin(pattern, e.func)
+        elseif field == :file
+            occursin(pattern, e.file)
+        elseif field == :both
+            occursin(pattern, e.func) || occursin(pattern, e.file)
+        else
+            error("field must be :func, :file, or :both")
+        end
+    end
+end
+
+"""
+    query_by_regex_function(profile::ProfileData, pattern::Regex) -> Vector{ProfileEntry}
+
+Query entries by matching function names with regex.
+Convenience wrapper for `query_by_regex(profile, pattern, field=:func)`.
+
+# Example
+```julia
+# Find all functions starting with "test_"
+test_funcs = query_by_regex_function(profile, r"^test_")
+```
+"""
+function query_by_regex_function(profile::ProfileData, pattern::Regex)
+    return query_by_regex(profile, pattern, field = :func)
+end
+
+"""
+    query_by_regex_file(profile::ProfileData, pattern::Regex) -> Vector{ProfileEntry}
+
+Query entries by matching file paths with regex.
+Convenience wrapper for `query_by_regex(profile, pattern, field=:file)`.
+
+# Example
+```julia
+# Find all entries from test files
+test_files = query_by_regex_file(profile, r"test.*\\.jl\$")
+```
+"""
+function query_by_regex_file(profile::ProfileData, pattern::Regex)
+    return query_by_regex(profile, pattern, field = :file)
+end
+
+"""
+    combine_filters(filters...; mode=:and) -> Function
+
+Combine multiple filter functions into a single filter.
+
+# Arguments
+- `filters`: Variable number of filter functions
+- `mode`: How to combine - `:and` (all must match) or `:or` (any must match)
+
+# Examples
+```julia
+# Combine: user code AND above threshold
+combined = combine_filters(
+    e -> !is_system_code(e),
+    e -> e.percentage > 2.0,
+    mode=:and
+)
+results = query_by_filter(profile, combined)
+
+# Any match (OR)
+combined = combine_filters(
+    e -> contains(e.file, "important.jl"),
+    e -> e.percentage > 10.0,
+    mode=:or
+)
+high_priority = query_by_filter(profile, combined)
+```
+"""
+function combine_filters(filters...; mode = :and)
+    if mode == :and
+        return function (entry)
+            all(f(entry) for f in filters)
+        end
+    elseif mode == :or
+        return function (entry)
+            any(f(entry) for f in filters)
+        end
+    else
+        error("mode must be :and or :or")
+    end
+end
+
+"""
+    negate_filter(filter_fn::Function) -> Function
+
+Negate a filter function (logical NOT).
+
+# Example
+```julia
+# Get all entries that are NOT system code
+not_system = negate_filter(is_system_code)
+user_entries = query_by_filter(profile, not_system)
+
+# Equivalent to:
+user_entries = query_by_filter(profile, e -> !is_system_code(e))
+```
+"""
+function negate_filter(filter_fn::Function)
+    return function (entry)
+        !filter_fn(entry)
+    end
+end
